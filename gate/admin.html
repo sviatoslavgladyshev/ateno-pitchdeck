@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Ateno — deck access</title>
+<link rel="icon" href="/static/favicon.png">
+<link rel="stylesheet" href="/static/gate.css">
+<style>
+body{place-items:start center}
+main.wide{width:min(860px,100%);text-align:left;padding-top:24px}
+.top{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.top img{width:40px;margin:0}
+.top h1{margin:0;font-size:28px;flex:1}
+.top a{color:#a1a1a6;font-size:14px}
+.row{display:flex;flex-direction:row;gap:10px;margin-top:16px}
+.row input{flex:1}
+.row button{width:auto;padding:13px 22px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{padding:11px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:middle}
+th{font-weight:500;color:#6e6e73;font-size:13px}
+td.muted{color:#86868b}
+td.act{text-align:right;white-space:nowrap}
+.mini{all:unset;cursor:pointer;font-size:13px;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.08);color:#f5f5f7;margin-left:6px}
+.mini.ok{background:#f5f5f7;color:#05050a}
+.mini.danger:hover{background:#ff453a;color:#fff}
+.empty{color:#6e6e73;font-size:14px;padding:12px 8px}
+.count{color:#6e6e73;font-weight:400}
+</style>
+</head>
+<body>
+<main id="login">
+  <img class="logo" src="/static/logo.png" alt="Ateno">
+  <section id="ask" hidden>
+    <h1>Deck admin</h1>
+    <p>Sign in with the admin email.</p>
+    <form id="form">
+      <input id="email" type="email" autocomplete="email" required placeholder="you@example.com" aria-label="Email">
+      <button id="send" type="submit">Send sign-in link</button>
+    </form>
+  </section>
+  <section id="sent" hidden><h1>Check your inbox</h1><p>We sent a sign-in link to <b id="sentto"></b>. If you don't see it, check spam.</p></section>
+  <section id="notadmin" hidden><h1>Not an admin</h1><p><b id="who"></b> can't manage the deck.</p><p class="small"><a href="#" class="out">Sign out</a></p></section>
+  <section id="wait"><p>Loading…</p></section>
+  <p class="msg" id="msg" role="status"></p>
+</main>
+
+<main id="panel" class="wide" hidden>
+  <div class="top"><img src="/static/logo.png" alt=""><h1>Deck access</h1>
+    <a href="/en/" target="_blank">Open EN</a><a href="/ru/" target="_blank">Open RU</a><a href="#" class="out">Sign out</a></div>
+  <p>Only the people listed here can open the deck at <b id="host"></b>. You always can.</p>
+
+  <h2>Requests <span class="count" id="nreq"></span></h2>
+  <p>People who signed in but are not on the list yet.</p>
+  <table><tbody id="reqs"></tbody></table>
+
+  <h2>Can view <span class="count" id="nallow"></span></h2>
+  <form class="row" id="add" style="margin-top:0">
+    <input id="newemail" type="email" required placeholder="investor@fund.com" aria-label="Email to add">
+    <input id="newnote" placeholder="Note (optional)" aria-label="Note">
+    <button type="submit">Add</button>
+  </form>
+  <table><thead><tr><th>Email</th><th>Note</th><th>Added</th><th></th></tr></thead><tbody id="allow"></tbody></table>
+
+  <h2>Recent views</h2>
+  <table><thead><tr><th>Email</th><th>Deck</th><th>When</th><th>Device</th></tr></thead><tbody id="views"></tbody></table>
+  <p class="small">Removing someone stops them opening the deck again; a tab they already have open stays open until they close it.</p>
+</main>
+
+<script type="module">
+import { auth, db, $, sendLink, currentUser, logout, ADMIN, HOST } from "/static/app.js";
+import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, limit, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
+
+const show = id => { for (const s of ["ask", "sent", "notadmin", "wait"]) $(s).hidden = s !== id; };
+const say = (t, bad) => { $("msg").textContent = t || ""; $("msg").className = "msg" + (bad ? " bad" : ""); };
+document.querySelectorAll(".out").forEach(a => a.addEventListener("click", async e => { e.preventDefault(); await logout(); location.reload(); }));
+
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("email").value.trim().toLowerCase();
+  $("send").disabled = true; say("");
+  try { await sendLink(email, "en"); $("sentto").textContent = email; show("sent"); }
+  catch { say("Couldn't send the link. Check the address and try again.", true); }
+  $("send").disabled = false;
+});
+
+const user = await currentUser();
+if (!user || !user.emailVerified) show("ask");
+else if (user.email.toLowerCase() !== ADMIN) { $("who").textContent = user.email; show("notadmin"); }
+else panel();
+
+const when = t => t ? t.toDate().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "…";
+const device = ua => /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Other";
+function cell(text, cls) { const td = document.createElement("td"); td.textContent = text; if (cls) td.className = cls; return td; }
+function btn(label, cls, fn) { const b = document.createElement("button"); b.className = "mini " + cls; b.textContent = label; b.onclick = fn; return b; }
+function empty(tb, text, cols) { const tr = document.createElement("tr"); const td = cell(text, "empty"); td.colSpan = cols; tr.append(td); tb.replaceChildren(tr); }
+
+async function allow(email, note = "") {
+  email = email.trim().toLowerCase();
+  await setDoc(doc(db, "allow", email), { email, note, addedAt: serverTimestamp() });
+  await deleteDoc(doc(db, "requests", email)).catch(() => {});
+}
+
+function panel() {
+  $("login").hidden = true; $("panel").hidden = false; $("host").textContent = HOST;
+
+  $("add").addEventListener("submit", async e => {
+    e.preventDefault();
+    try { await allow($("newemail").value, $("newnote").value.trim()); $("newemail").value = ""; $("newnote").value = ""; }
+    catch { alert("Couldn't add this address."); }
+  });
+
+  onSnapshot(query(collection(db, "allow"), orderBy("addedAt", "desc")), snap => {
+    $("nallow").textContent = snap.size ? `(${snap.size})` : "";
+    if (!snap.size) return empty($("allow"), "Nobody yet. Add an email above.", 4);
+    $("allow").replaceChildren(...snap.docs.map(d => {
+      const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
+      act.append(btn("Remove", "danger", () => confirm(`Remove ${d.id}? They won't be able to open the deck.`) && deleteDoc(d.ref)));
+      tr.append(cell(d.id), cell(v.note || "", "muted"), cell(when(v.addedAt), "muted"), act);
+      return tr;
+    }));
+  });
+
+  onSnapshot(query(collection(db, "requests"), orderBy("at", "desc")), snap => {
+    $("nreq").textContent = snap.size ? `(${snap.size})` : "";
+    if (!snap.size) return empty($("reqs"), "No requests.", 3);
+    $("reqs").replaceChildren(...snap.docs.map(d => {
+      const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
+      act.append(btn("Allow", "ok", () => allow(d.id)), btn("Dismiss", "", () => deleteDoc(d.ref)));
+      tr.append(cell(d.id), cell(when(v.at), "muted"), act);
+      return tr;
+    }));
+  });
+
+  onSnapshot(query(collection(db, "views"), orderBy("at", "desc"), limit(100)), snap => {
+    if (!snap.size) return empty($("views"), "No views yet.", 4);
+    $("views").replaceChildren(...snap.docs.map(d => {
+      const v = d.data(), tr = document.createElement("tr");
+      tr.append(cell(v.email), cell((v.lang || "").toUpperCase(), "muted"), cell(when(v.at), "muted"), cell(device(v.ua || ""), "muted"));
+      return tr;
+    }));
+  });
+}
+</script>
+</body>
+</html>

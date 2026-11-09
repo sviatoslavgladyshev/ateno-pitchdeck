@@ -5,15 +5,43 @@ service cloud.firestore {
     function verified() {
       return request.auth != null && request.auth.token.email_verified == true;
     }
+    function me() { return request.auth.token.email.lower(); }
+    function isAdmin() { return verified() && me() == 'glsvyatoslav@gmail.com'; }
+    // On the access list kept by the admin (allow/<email>), or the admin.
+    function allowed() {
+      return verified() && (isAdmin() || exists(/databases/$(database)/documents/allow/$(me())));
+    }
+
     // Deck HTML (slides + speaker notes). Written only by publish.py with admin credentials.
     match /decks/{lang} {
-      allow read: if verified();
+      allow read: if allowed();
     }
-    // One entry per opening of the deck: who looked and when. Readable only in the console.
+
+    // Access list: managed from /admin/.
+    match /allow/{email} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['email', 'note', 'addedAt'])
+        && request.resource.data.email == email
+        && request.resource.data.note is string && request.resource.data.note.size() < 200;
+    }
+
+    // Someone signed in but is not on the list: one request per email, shown to the admin.
+    match /requests/{email} {
+      allow read, delete: if isAdmin();
+      allow create, update: if verified() && email == me()
+        && request.resource.data.keys().hasOnly(['email', 'lang', 'at'])
+        && request.resource.data.email == me()
+        && request.resource.data.at == request.time
+        && request.resource.data.lang in ['en', 'ru'];
+    }
+
+    // One entry per opening of the deck.
     match /views/{id} {
-      allow create: if verified()
+      allow read, delete: if isAdmin();
+      allow create: if allowed()
         && request.resource.data.keys().hasOnly(['email', 'lang', 'at', 'ua'])
-        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.email == me()
         && request.resource.data.at == request.time
         && request.resource.data.lang in ['en', 'ru']
         && request.resource.data.ua is string && request.resource.data.ua.size() < 400;

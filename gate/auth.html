@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Ateno — sign in</title>
+<link rel="icon" href="/static/favicon.png">
+<link rel="stylesheet" href="/static/gate.css">
+</head>
+<body>
+<main>
+  <img class="logo" src="/static/logo.png" alt="Ateno">
+  <section id="wait"><p id="waittext"></p></section>
+  <section id="confirm" hidden>
+    <h1 id="ctitle"></h1>
+    <p id="ctext"></p>
+    <form id="cform">
+      <input id="cemail" type="email" autocomplete="email" required placeholder="name@company.com" aria-label="Email">
+      <button type="submit" id="cbtn"></button>
+    </form>
+  </section>
+  <section id="fail" hidden><h1 id="ftitle"></h1><p id="ftext"></p><p class="small"><a id="again" href="/en/"></a></p></section>
+</main>
+<script type="module">
+import { auth, $, EMAIL_KEY } from "/static/app.js";
+import { isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-auth.js";
+
+// The sign-in link from the email lands here: sign in, then go back to the page that asked for it.
+const q = new URLSearchParams(location.search);
+const ru = (q.get("lang") || "").startsWith("ru");
+const L = ru ? {
+  wait: "Входим…", ctitle: "Подтвердите email", ctext: "Ссылка открылась в другом браузере. Введите адрес, на который она пришла.",
+  cbtn: "Войти", ftitle: "Ссылка не сработала", ftext: "Она устарела или уже использована. Запросите новую.", again: "Запросить новую ссылку" }
+: { wait: "Signing you in…", ctitle: "Confirm your email", ctext: "The link opened in a different browser. Enter the address it was sent to.",
+  cbtn: "Sign in", ftitle: "This link didn't work", ftext: "It has expired or was already used. Request a new one.", again: "Request a new link" };
+for (const k of ["waittext:wait", "ctitle", "ctext", "cbtn", "ftitle", "ftext", "again"]) { const [id, key] = k.split(":"); $(id).textContent = L[key || id]; }
+
+// where to go after sign-in: ?next=/en/ (Firebase's own link page passes it through), or inside continueUrl
+let back = "/en/";
+const safe = p => typeof p === "string" && /^\/(en|ru|admin)\/$/.test(p);
+let next = q.get("next");
+try { if (!next) next = new URL(q.get("continueUrl") || "").searchParams.get("next"); } catch {}
+if (safe(next)) back = next;
+if (ru && back === "/en/") back = "/ru/";
+$("again").href = back;
+const show = id => { for (const s of ["wait", "confirm", "fail"]) $(s).hidden = s !== id; };
+
+async function finish(email) {
+  show("wait");
+  try {
+    await signInWithEmailLink(auth, email.trim().toLowerCase(), location.href);
+    localStorage.removeItem(EMAIL_KEY);
+    location.replace(back);
+  } catch (e) { show("fail"); }
+}
+if (!isSignInWithEmailLink(auth, location.href)) location.replace(back);
+else if (localStorage.getItem(EMAIL_KEY)) finish(localStorage.getItem(EMAIL_KEY));
+else { show("confirm"); $("cform").addEventListener("submit", e => { e.preventDefault(); finish($("cemail").value); }); }
+</script>
+</body>
+</html>
