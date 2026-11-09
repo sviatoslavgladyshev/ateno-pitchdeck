@@ -1,0 +1,1518 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ateno — питч-дек</title>
+<meta name="description" content="Ateno: on-device 3D mapping chips for robots and drones. Pre-seed pitch deck.">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ateno — Pitch Deck">
+<meta property="og:description" content="On-device 3D mapping chips for robots and drones.">
+<meta property="og:image" content="thumbs/cover.jpg">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/inter.css">
+<style>
+/* ---------- page ---------- */
+*{box-sizing:border-box}
+:root{
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ease:cubic-bezier(.32,.72,0,1);
+  --ink:#f5f5f7;--ink-2:rgba(235,235,245,.62);--ink-3:rgba(235,235,245,.36);
+  --tint:#0a84ff;
+}
+html,body{margin:0;height:100%;overflow:hidden;font-family:var(--ui);-webkit-font-smoothing:antialiased;
+  background:#000;}
+body.idle{cursor:none}
+#stage{position:fixed;inset:0;overflow:hidden}
+#deck{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;background:#000;overflow:hidden;border-radius:14px;
+  opacity:0;transition:opacity .7s ease}
+body.ready #deck{opacity:1}
+:fullscreen #deck{border-radius:0;box-shadow:none}
+body.full #deck{border-radius:0;box-shadow:none}
+
+/* ---------- slide content defaults (matches the slide format) ---------- */
+.slide{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;visibility:hidden;opacity:0;
+  transition:opacity .45s ease,transform .62s var(--ease),visibility 0s linear .62s}
+.slide.active{visibility:visible;opacity:1;transition:opacity .45s ease,transform .62s var(--ease),visibility 0s}
+.slide p,.slide h1,.slide h2,.slide h3,.slide ul,.slide ol{margin:0}
+.slide h1{font-size:96px;font-weight:600;line-height:1.1}
+.slide h2{font-size:64px;font-weight:600;line-height:1.15}
+.slide h3{font-size:44px;font-weight:600;line-height:1.2}
+.slide p{font-size:32px;line-height:1.4}
+.slide img{display:block}
+.slide table{border-collapse:collapse;width:100%}
+.slide th,.slide td{padding:.35em .6em;text-align:left;border-bottom:1px solid #DADCE0;vertical-align:top}
+.slide aside{display:none}
+.slide .embed{background:#fff;pointer-events:none}
+
+/* ---------- surfaces ---------- */
+.glass{background:rgba(30,30,32,.8);-webkit-backdrop-filter:saturate(180%) blur(30px);backdrop-filter:saturate(180%) blur(30px);
+  box-shadow:0 0 0 .5px rgba(255,255,255,.14),0 16px 48px rgba(0,0,0,.45);color:var(--ink)}
+button{font-family:inherit}
+
+/* ---------- control bar ---------- */
+#bar{position:fixed;left:50%;bottom:20px;width:min(640px,calc(100vw - 24px));transform:translateX(-50%);padding:9px 8px 6px;border-radius:18px;z-index:10;
+  transition:opacity .34s ease,transform .5s var(--ease);font-size:13px;user-select:none;-webkit-user-select:none}
+body.idle #bar{opacity:0;transform:translate(-50%,10px);pointer-events:none}
+#row{display:flex;align-items:center;gap:0;margin-top:4px}
+#bar button{all:unset;box-sizing:border-box;position:relative;width:36px;height:34px;display:grid;place-items:center;border-radius:9px;cursor:pointer;color:var(--ink);
+  transition:background .16s,opacity .16s;-webkit-tap-highlight-color:transparent}
+#bar button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#bar button:hover{background:rgba(255,255,255,.1)}
+#bar button:focus-visible{outline:2px solid var(--tint);outline-offset:1px}
+#bar button:disabled{opacity:.28;cursor:default;background:none}
+#count{min-width:58px;text-align:center;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:500;white-space:nowrap}
+#count i{font-style:normal;color:var(--ink-3);font-weight:400}
+
+/* Viewer | Presenter */
+#bstat{display:flex;gap:12px;align-items:center;flex:1;min-width:0;padding:0 10px;overflow:hidden}
+#bstat .st{color:var(--ink-2);font-size:12.5px}
+#seg{display:flex;flex:none;padding:2px;margin:0 6px 0 auto;border-radius:9px;background:rgba(255,255,255,.08)}
+#bar #seg button{width:auto;height:28px;padding:0 12px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink-2);display:block;line-height:28px}
+#bar #seg button:hover{background:none;color:var(--ink)}
+#bar #seg button.on{background:rgba(255,255,255,.2);color:#fff}
+
+/* timeline */
+#scrub{display:flex;gap:2px;height:12px;align-items:center;cursor:pointer;padding:0 8px;touch-action:none}
+.ch{position:relative;height:3px;flex:var(--n) 1 0;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;transition:height .18s var(--ease)}
+.ch b{position:absolute;inset:0 auto 0 0;width:0;background:#fff;transition:width .35s var(--ease)}
+#scrub:hover .ch{height:6px}
+#peek{position:fixed;width:240px;padding:5px;border-radius:14px;z-index:11;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity .14s,transform .22s var(--ease);font-size:12px}
+#peek.on{opacity:1;transform:none}
+#peek img{display:block;width:100%;aspect-ratio:16/9;border-radius:10px;background:#fff}
+#peek div{padding:6px 6px 3px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#peek span{color:var(--ink-3);font-variant-numeric:tabular-nums;margin-right:6px}
+
+/* notes in Viewer */
+#notes{position:fixed;left:50%;bottom:112px;transform:translate(-50%,8px);width:min(640px,calc(100vw - 24px));max-height:34vh;overflow:auto;border-radius:18px;padding:16px 20px;
+  font-size:16px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .2s,transform .4s var(--ease),visibility 0s linear .2s,bottom .5s var(--ease);z-index:9}
+body.show-notes #notes{opacity:1;visibility:visible;transform:translateX(-50%);transition:opacity .2s,transform .4s var(--ease),visibility 0s,bottom .5s var(--ease)}
+body.idle #notes{bottom:20px}
+
+/* all slides */
+#grid{position:fixed;inset:0;overflow:auto;z-index:20;padding:clamp(20px,4vw,56px);background:rgba(0,0,0,.92);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px);
+  opacity:0;visibility:hidden;transition:opacity .24s ease,visibility 0s linear .24s;color:var(--ink)}
+body.show-grid #grid{opacity:1;visibility:visible;transition:opacity .24s ease,visibility 0s}
+#gridin{max-width:1480px;margin:0 auto}
+#grid h2{margin:36px 0 14px;font-size:13px;font-weight:500;color:var(--ink-3)}
+#grid h2:first-child{margin-top:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:24px 20px}
+#grid a{display:block;color:var(--ink);text-decoration:none;font-size:13px;outline:none;-webkit-tap-highlight-color:transparent}
+#grid a img{width:100%;aspect-ratio:16/9;border-radius:9px;display:block;background:#fff;transition:transform .3s var(--ease)}
+#grid a:hover img{transform:scale(1.015)}
+#grid a.cur img{box-shadow:0 0 0 2px #000,0 0 0 3.5px rgba(255,255,255,.5)}
+#grid a.sel img,#grid a:focus-visible img{box-shadow:0 0 0 2px #000,0 0 0 4px var(--tint)}
+#grid a span{display:flex;gap:7px;margin-top:8px;line-height:1.3;color:var(--ink-2)}
+#grid a span b{font-weight:400;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+/* sheets */
+.scrim{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .22s,visibility 0s linear .22s}
+body.show-start #start,body.show-remote #remote,body.show-help #help{opacity:1;visibility:visible;transition:opacity .22s,visibility 0s}
+.sheet{width:min(440px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px;border-radius:22px;background:#1c1c1e;box-shadow:0 0 0 .5px rgba(255,255,255,.1),0 24px 70px rgba(0,0,0,.6);color:var(--ink);transform:scale(.97);transition:transform .4s var(--ease)}
+body.show-start #start .sheet,body.show-remote #remote .sheet,body.show-help #help .sheet{transform:none}
+.sheethead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sheet h2{margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em}
+.link{all:unset;cursor:pointer;font-size:15px;font-weight:400;color:var(--tint)}
+.link:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
+.quiet{color:var(--ink-2);font-size:13px}
+#dstatus{margin:0 0 12px;font-size:13px;line-height:1.45;color:var(--ink-2)}
+#dstatus:empty{display:none}
+
+/* grouped list, as in System Settings */
+.group{border-radius:11px;background:#2c2c2e;overflow:hidden;margin-bottom:14px}
+.group[hidden]{display:none}
+.rowi>span:first-child{flex:none;max-width:100%}
+#picker .rowi>span:first-child{flex:1}
+.rowi{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;min-height:42px;padding:8px 13px;font-size:14px;color:var(--ink)}
+.rowi[hidden]{display:none}
+.rowi+.rowi{box-shadow:inset 0 .5px 0 rgba(255,255,255,.1)}
+button.rowi{cursor:pointer}
+button.rowi:hover{background:rgba(255,255,255,.05)}
+button.rowi:focus-visible{outline:2px solid var(--tint);outline-offset:-2px}
+.val{color:var(--ink-2);display:flex;align-items:center;gap:7px;min-width:0;text-align:right;overflow-wrap:anywhere;line-height:1.3}
+.chev::after{content:"›";margin-left:2px;color:var(--ink-3);font-size:17px;line-height:1}
+.val.ok{color:var(--ink)}
+.val.ok::before{content:"";width:7px;height:7px;border-radius:50%;background:#30d158}
+.grouplabel{margin:0 0 6px 13px;font-size:12px;color:var(--ink-3)}
+.grouplabel[hidden]{display:none}
+#picker:empty{display:none}
+#picker .rowi span:first-child{min-width:0;overflow-wrap:anywhere;line-height:1.3}
+#picker .rowi::after{content:"";flex:none;width:16px;height:16px;background:no-repeat center/contain}
+#picker .rowi.on::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 8.500 3.300 3.300L13 4.500' fill='none' stroke='%230a84ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+#sfull{all:unset;flex:none;position:relative;width:40px;height:24px;border-radius:12px;cursor:pointer;background:rgba(255,255,255,.18);transition:background .2s}
+#sfull::after{content:"";position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.35);transition:transform .26s var(--ease)}
+#sfull[aria-checked=true]{background:#30d158}
+#sfull[aria-checked=true]::after{transform:translateX(16px)}
+#sfull:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
+.mini{display:flex;gap:6px}
+.mini button{all:unset;cursor:pointer;min-width:30px;padding:4px 10px;border-radius:7px;text-align:center;font-size:13px;color:var(--ink);background:rgba(255,255,255,.1)}
+.mini button:hover{background:rgba(255,255,255,.17)}
+.mini button:focus-visible{outline:2px solid var(--tint)}
+#modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#modes[hidden]{display:none}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;display:block;text-align:center;padding:10px;border-radius:10px;font-size:14px;font-weight:500;color:var(--ink);background:rgba(255,255,255,.1);transition:background .16s}
+.btn:hover{background:rgba(255,255,255,.16)}
+.btn.primary{background:#f5f5f7;color:#000}
+.btn.primary:hover{background:#fff}
+.btn:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
+.btn[hidden]{display:none}
+#clkrow .val{margin-left:auto}
+#clkfind[hidden]{display:none}
+#mreset{display:block;margin:14px auto 0;font-size:13px;color:var(--ink-3)}
+#mreset:hover{color:var(--ink-2)}
+
+/* remote */
+#remote .sheet{width:min(340px,100%);text-align:center}
+#remote .sheethead{justify-content:flex-end;margin-bottom:0}
+#rqrwrap{position:relative;width:196px;margin:0 auto 18px}
+#rqr{background:#fff;padding:12px;border-radius:14px;aspect-ratio:1;display:grid;place-items:center;color:#202124;font-size:13px}
+#rqr svg{width:100%;height:100%;display:block}
+#remote h2{font-size:19px}
+#rhint{margin:5px 0 14px;font-size:13px;line-height:1.4;color:var(--ink-2)}
+#rdevs{text-align:left}
+#rdevs:empty{display:none}
+#rstatus{display:none}
+#rfoot{display:flex;justify-content:center;gap:18px;font-size:13px}
+#rfoot button{all:unset;cursor:pointer;color:var(--ink-3)}
+#rfoot button:hover{color:var(--ink-2)}
+#rfoot button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
+#rok{position:absolute;inset:0;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.96);opacity:0;pointer-events:none}
+#rok svg{width:64px;height:64px;fill:#30d158}
+#rok path{fill:none;stroke:#fff;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40}
+#rok.on{animation:rokfade 2.2s ease both}
+#rok.on svg{animation:rokpop .5s cubic-bezier(.34,1.4,.64,1) both}
+#rok.on path{animation:rokdraw .36s .2s ease forwards}
+@keyframes rokfade{0%{opacity:0}8%,80%{opacity:1}100%{opacity:0}}
+@keyframes rokpop{from{transform:scale(.5)}to{transform:none}}
+@keyframes rokdraw{to{stroke-dashoffset:0}}
+
+/* shortcuts */
+#help .sheet{width:min(400px,100%)}
+#help dl{display:grid;grid-template-columns:1fr auto;gap:9px 20px;margin:0;font-size:13.5px;align-items:center;color:var(--ink-2)}
+#help dd{margin:0;text-align:right;white-space:nowrap}
+kbd{display:inline-block;min-width:22px;padding:2px 6px;margin-left:3px;border-radius:5px;background:rgba(255,255,255,.1);font:500 12px var(--ui);text-align:center;color:var(--ink)}
+#jump{position:fixed;left:50%;top:18px;transform:translate(-50%,-6px);padding:8px 15px;border-radius:999px;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;z-index:45;opacity:0;pointer-events:none;transition:opacity .18s,transform .36s var(--ease)}
+#jump.on{opacity:1;transform:translate(-50%,0)}
+#jump i{font-style:normal;color:var(--ink-2);font-weight:400;margin-right:6px}
+#black{position:fixed;inset:0;background:#000;z-index:15;opacity:0;pointer-events:none;transition:opacity .4s ease}
+body.black #black{opacity:1;pointer-events:auto}
+
+/* laser pointer, placed in slide coordinates */
+#laser{position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;z-index:50;pointer-events:none;opacity:0;transition:opacity .14s;will-change:transform;
+  background:radial-gradient(circle,#fff 0,#ff3b30 26%,rgba(255,59,48,.7) 42%,rgba(255,59,48,0) 72%)}
+#laser.on{opacity:1}
+
+/* the slides window */
+body.audience,body.audience #stage{cursor:none;background:#000}
+body.audience #bar,body.audience #notes,body.audience #jump,body.audience #peek{display:none}
+
+/* ---------- presenter view ---------- */
+#phead,#pv,#pnotes{display:none}
+body.presenter{cursor:auto}
+body.presenter .slide,body.presenter .slide.active{transition:none!important}
+body.presenter #stage{right:40%;top:68px;bottom:92px}
+body.presenter #deck{border-radius:10px}
+body.presenter #bar{left:30%;bottom:18px;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+body.presenter #notes,body.presenter #bstat{display:none}
+body.presenter #bar{width:min(520px,calc(60vw - 32px))}
+body.presenter #seg{margin:0 auto}
+body.presenter #phead{display:flex;position:fixed;left:0;right:0;top:0;height:68px;align-items:center;gap:22px;padding:0 28px 0 32px;color:var(--ink)}
+#timer{all:unset;cursor:pointer;font-size:32px;font-weight:300;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+#timer.paused{color:var(--ink-3)}
+#clock{font-size:15px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+#rehearse{flex:1;min-width:0;font-size:13px;line-height:1.3;color:var(--ink-3);overflow-wrap:anywhere}
+#pfs{all:unset;flex:none;cursor:pointer;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:500;color:#000;background:#f5f5f7}
+#pfs[hidden]{display:none}
+#pfs:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
+#pstat{display:flex;align-items:center;gap:16px;flex:none}
+#pdevs,#pclk{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:16px;font-size:14px;color:var(--ink-2);white-space:nowrap}
+#pclk{gap:8px}
+#pdevs:focus-visible,#pclk:focus-visible{outline:2px solid var(--tint);outline-offset:3px}
+#pdevs .st,#pclk{font-size:14px;color:var(--ink-2)}
+#pdevs .st{gap:8px}
+#pclk i,#pdevs i{width:8px;height:8px}
+#pdevs .st.on,#pclk.on{color:var(--ink)}
+#pclk i{border-radius:50%;box-shadow:inset 0 0 0 1.2px var(--ink-3)}
+#pclk.on i{background:#30d158;box-shadow:none}
+#pdevs .st i{box-shadow:inset 0 0 0 1.2px var(--ink-3);background:none}
+#pdevs .st.on i{background:#30d158;box-shadow:none}
+#pclk.ping i{animation:stping .6s var(--ease)}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-3);white-space:nowrap}
+.st i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2)}
+.st.on{color:var(--ink-2)}
+.st.on i{background:#30d158}
+.st.off i{background:rgba(255,255,255,.2)}
+.st.ping i{animation:stping .6s var(--ease)}
+@keyframes stping{0%{transform:scale(1)}40%{transform:scale(2.2)}100%{transform:scale(1)}}
+#pgear{all:unset;cursor:pointer;display:grid;place-items:center;width:32px;height:32px;border-radius:8px;color:var(--ink-2)}
+#pgear:hover{background:rgba(255,255,255,.1);color:var(--ink)}
+#pgear:focus-visible{outline:2px solid var(--tint)}
+#pgear svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+body.presenter #pv{display:block;position:fixed;right:0;top:68px;width:40%;padding:16px 32px 0 12px;color:var(--ink)}
+#pv .lab{font-size:13px;color:var(--ink-3);margin-bottom:8px}
+#nextwrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#fff;display:grid;place-items:center;color:var(--ink-3);font-size:14px}
+#nextwrap .slide{visibility:visible;opacity:1;transition:none;transform-origin:0 0;pointer-events:none}
+#nextwrap.end{background:rgba(255,255,255,.05)}
+body.presenter #pnotes{display:block;position:fixed;right:0;bottom:0;width:40%;top:calc(68px + 16px + 26px + (40vw - 44px) * .5625 + 20px);overflow:auto;padding:0 32px 24px 12px;font-size:var(--notes,22px);line-height:1.45;letter-spacing:-.006em;color:var(--ink)}
+
+/* ---------- small screens ---------- */
+@media (max-width:720px){
+  #seg,#bstat,#bar #bpres{display:none}
+  #row{justify-content:space-between}
+  #count{flex:1}
+  #deck{border-radius:8px}
+  #bar{bottom:calc(10px + env(safe-area-inset-bottom))}
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 14px}
+}
+@media (hover:none){#scrub:hover .ch{height:3px}#peek{display:none}}
+
+/* print: one slide per page */
+@page{size:1920px 1080px;margin:0}
+@media print{
+  html,body{overflow:visible;background:#fff}
+  #bar,#notes,#grid,#phead,#pv,#pnotes,#help,#jump,#black,#peek,#start,#seg,#remote,#laser{display:none!important}
+  #stage{position:static}
+  #deck{position:static;transform:none!important;box-shadow:none;width:auto;height:auto;overflow:visible;border-radius:0;opacity:1}
+  .slide{position:relative;visibility:visible;opacity:1!important;transform:none!important;page-break-after:always;break-after:page}
+  .slide [data-build-in]{opacity:1!important;transform:none!important}
+}
+@media (prefers-reduced-motion:reduce){.slide,.slide.active,#bar,#notes,#help,#gridin{transition:none}}
+/* ---------- Ateno additions: animated bars ---------- */
+.slide .grow{transition:width 1.3s cubic-bezier(.2,.8,.2,1) .5s}
+.slide:not(.active) .grow{width:0!important}
+.slide .shrink{transition:width 1.6s cubic-bezier(.2,.8,.2,1) .6s}
+.slide:not(.active) .shrink{width:1200px!important}
+.slide .growh{transition:height 1.3s cubic-bezier(.2,.8,.2,1) .5s}
+.slide:not(.active) .growh{height:0!important}
+#nextwrap .grow,#nextwrap .shrink,#nextwrap .growh{transition:none}
+@media print{.slide .grow,.slide .shrink,.slide .growh{transition:none}}
+
+/* ---------- Ateno element system (blueprint) ---------- */
+.slide h1,.slide h2,.slide h3,.slide p[style*="font-weight:700"],.slide p[style*="font-weight:800"]{font-family:'Space Grotesk','Inter',sans-serif}
+.slide h2{letter-spacing:-2px!important}
+.slide .card{background-color:#ffffff!important;border:1px solid rgba(29,29,31,.13)!important;border-radius:4px!important;position:relative;
+  background-image:linear-gradient(#6d4fe0,#6d4fe0),linear-gradient(#6d4fe0,#6d4fe0),linear-gradient(#6d4fe0,#6d4fe0),linear-gradient(#6d4fe0,#6d4fe0),
+  linear-gradient(#6d4fe0,#6d4fe0),linear-gradient(#6d4fe0,#6d4fe0),linear-gradient(#6d4fe0,#6d4fe0),linear-gradient(#6d4fe0,#6d4fe0)!important;
+  background-repeat:no-repeat!important;
+  background-size:18px 2px,2px 18px,18px 2px,2px 18px,18px 2px,2px 18px,18px 2px,2px 18px!important;
+  background-position:0 0,0 0,100% 0,100% 0,0 100%,0 100%,100% 100%,100% 100%!important}
+.slide .card.hi{background-color:#f6f3ff!important;border-color:rgba(109,79,224,.45)!important}
+.slide.dk .card{background-color:rgba(255,255,255,.03)!important;border-color:rgba(255,255,255,.16)!important}
+.slide .tag{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:18px;letter-spacing:2px;color:#a1a1a6;position:absolute;right:28px;top:24px}
+.slide .ibox{width:76px;height:76px;flex:none;border:1px solid rgba(29,29,31,.16);border-radius:4px;display:flex;align-items:center;justify-content:center}
+.slide.dk .ibox{border-color:rgba(255,255,255,.2)}
+</style>
+</head>
+<body>
+<div id="stage"><div id="deck">
+<section class="slide dk" id="cover" data-transition="fade" data-section="Проблема" style="background:#05050a;color:#f5f5f7;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<video src="assets/chip-reveal.mp4" poster="assets/chip-poster.jpg" muted loop playsinline autoplay style="position:absolute;left:700px;top:0;width:1220px;height:1080px;object-fit:cover"></video>
+<div style="position:absolute;left:700px;top:0;width:560px;height:1080px;background:linear-gradient(90deg,#05050a,rgba(5,5,10,0))"></div>
+<div style="position:absolute;left:128px;top:300px;width:700px;display:flex;flex-direction:column;gap:36px">
+<img data-build-in="fade 1" src="assets/logo.png" alt="Ateno logo" style="width:120px;height:auto">
+<h1 data-build-in="rise 2" style="font-size:150px;font-weight:700;letter-spacing:-5px;line-height:1">Ateno</h1>
+<p data-build-in="rise 3" style="font-size:46px;line-height:1.25;color:#a1a1a6;font-weight:500;letter-spacing:-.6px">Навигация,<br>не зависящая от GPS</p>
+</div>
+<p style="position:absolute;left:128px;bottom:120px;font-size:24px;color:#6e6e73">Святослав Гладышев · сооснователь и CEO · info@ateno.co · Pre-seed · ноябрь 2026</p>
+<p style="position:absolute;right:72px;top:920px;width:400px;font-size:24px;color:#86868b;text-align:right">Концепт-рендер</p>
+
+<div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">01 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Ateno делает специализированный чип, который позволяет автономным системам строить 3D-карты на борту и ориентироваться без GPS. Чип на экране — концепт-рендер, не кремний.</aside>
+</section>
+<section class="slide" id="problem" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:64px">
+
+<div style="display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">02 /</span> Проблема</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:84px;font-weight:700;letter-spacing:-2.7px;line-height:1.05;">Каждая автономная система спрашивает: <br><span style="color:#86868b">где я?</span></h2></div>
+<div style="display:flex;gap:40px">
+<div data-build-in="rise 1" style="flex:1;display:flex;flex-direction:column;gap:22px"><div style="position:relative;height:300px;border-radius:4px;overflow:hidden;background:#111"><img src="assets/place-bridge.webp" alt="" style="width:100%;height:300px;object-fit:cover;object-position:50% 40%"><p style="position:absolute;left:16px;top:16px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:3px">Иллюстрация</p></div><p class="tag" style="position:static">01</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;margin-top:-12px">Без GPS</h3><p style="font-size:27px;line-height:1.4;color:#6e6e73;margin-top:-8px">Сигнал слабый, отражённый или его нет совсем.</p></div>
+<div data-build-in="rise 2" style="flex:1;display:flex;flex-direction:column;gap:22px"><div style="position:relative;height:300px;border-radius:4px;overflow:hidden;background:#111"><img src="assets/place-underground.webp" alt="" style="width:100%;height:300px;object-fit:cover;object-position:50% 50%"><p style="position:absolute;left:16px;top:16px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:3px">Иллюстрация</p></div><p class="tag" style="position:static">02</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;margin-top:-12px">Под землёй и в зданиях</h3><p style="font-size:27px;line-height:1.4;color:#6e6e73;margin-top:-8px">В тоннелях, шахтах и зданиях сигнала нет.</p></div>
+<div data-build-in="rise 3" style="flex:1;display:flex;flex-direction:column;gap:22px"><div style="position:relative;height:300px;border-radius:4px;overflow:hidden;background:#111"><img src="assets/place-site.webp" alt="" style="width:100%;height:300px;object-fit:cover;object-position:50% 60%"><p style="position:absolute;left:16px;top:16px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:3px">Иллюстрация</p></div><p class="tag" style="position:static">03</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;margin-top:-12px">Без связи</h3><p style="font-size:27px;line-height:1.4;color:#6e6e73;margin-top:-8px">Надёжной связи с сервером нет. Карту нужно строить на борту.</p></div>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">02 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>GPS отвечает на этот вопрос, пока он доступен. Часто его нет, а связи с сервером тоже нет. Машина должна строить 3D-карту по своим камерам, на ходу, и находить себя на ней. Три картинки — иллюстрации с нашего сайта, не съёмка.</aside>
+</section>
+<section class="slide" id="today" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:128px;top:128px;width:1664px;display:flex;flex-direction:column;gap:26px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">03 /</span> Сегодня</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:64px;font-weight:700;letter-spacing:-2.0px;line-height:1.05;">Лучшие 3D-карты дают гауссовы сплаты (3DGS). <br><span style="color:#86868b">Но для их построения нужен GPU из дата-центра.</span></h2></div>
+<div style="position:absolute;left:128px;top:392px;width:920px;height:530px;border-radius:6px;overflow:hidden;background:#000">
+<video src="assets/orbit.mp4" poster="assets/orbit-poster.jpg" muted loop playsinline autoplay style="width:1196px;height:689px;object-fit:cover;margin-left:-138px;margin-top:-60px"></video></div>
+<p style="position:absolute;left:128px;top:934px;width:920px;font-size:24px;color:#86868b;text-align:left">3DGS-сцена в программном вьюере</p>
+<div style="position:absolute;left:1120px;top:392px;width:672px;display:flex;flex-direction:column;gap:30px">
+<div data-build-in="rise 1" style="border-top:1px solid #e5e5ea;padding-top:22px"><p style="font-size:76px;font-weight:700;letter-spacing:-2.5px;line-height:1">0,4–5 к/с</p><p style="font-size:25px;color:#6e6e73;margin-top:10px;line-height:1.35">Опубликованные Gaussian SLAM на NVIDIA Jetson. Слишком медленно для навигации.</p></div>
+<div data-build-in="rise 2" style="border-top:1px solid #e5e5ea;padding-top:22px"><p style="font-size:76px;font-weight:700;letter-spacing:-2.5px;line-height:1">4–24 ч</p><p style="font-size:25px;color:#6e6e73;margin-top:10px;line-height:1.35">На реконструкцию большой сцены на GPU. Запись сейчас, карта потом.</p></div>
+<div data-build-in="rise 3" style="border-top:1px solid #e5e5ea;padding-top:22px"><p style="font-size:76px;font-weight:700;letter-spacing:-2.5px;line-height:1">20–80 ГБ</p><p style="font-size:25px;color:#6e6e73;margin-top:10px;line-height:1.35">Видеопамяти для больших сцен. Бортовое железо и близко не подходит.</p></div>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">03 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Gaussian Splatting строит фотореалистичные карты по обычным камерам. Но построение карты — это обучение. Источники: опубликованные бенчмарки Gaussian SLAM; 30+ интервью с практиками с мая 2026.</aside>
+</section>
+<section class="slide dk" id="insight" data-transition="push" style="background:#05050a;color:#f5f5f7;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:0;top:0;width:1920px;height:1080px;background:radial-gradient(circle at 50% 70%, rgba(60,40,140,.45) 0%, rgba(0,0,0,0) 60%)"></div>
+<div style="position:absolute;left:60px;top:210px;width:1800px;display:flex;flex-direction:column;align-items:center;gap:30px;text-align:center">
+<div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#a593f5;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">04 /</span> Наш инсайт</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div>
+<h2 style="font-size:94px;font-weight:700;letter-spacing:-3.5px;line-height:1.08">Роботу не нужно смотреть на карту. <br><span style="background:linear-gradient(90deg, #a78bfa, #60a5fa 55%, #34d399);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">Ему нужно её построить.</span></h2>
+</div>
+<div data-build-in="rise 1" style="position:absolute;left:360px;top:680px;width:1200px;display:flex;align-items:center;gap:56px">
+<p style="font-size:190px;font-weight:800;letter-spacing:-8px;line-height:1;background:linear-gradient(90deg, #a78bfa, #60a5fa 55%, #34d399);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent"><span data-count="77">77</span>%</p>
+<p style="font-size:34px;line-height:1.4;color:#a1a1a6;width:640px">времени обучения 3DGS уходит на обратный проход и оптимизатор. Наше железо спроектировано вокруг этого.</p>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">04 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Мы профилировали эталонный пайплайн (gsplat на NVIDIA L4) до того, как написали RTL. Построение карты — это обучение, и туда уходят вычисления. Большинство ускорителей ограничиваются рендерингом.</aside>
+</section>
+<section class="slide" id="product" data-transition="push" data-section="Продукт" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:1000px;top:0;width:920px;height:1080px;overflow:hidden;background:#1a1a1c">
+<img src="assets/chip-silver.jpg" alt="Ateno AX chip, concept render" style="width:920px;height:1080px;object-fit:cover;object-position:46% 50%"></div>
+<p style="position:absolute;right:72px;top:64px;font-size:16px;color:#ffffff;background:rgba(0,0,0,.45);padding:7px 14px;border-radius:3px;font-family:'JetBrains Mono', ui-monospace, monospace;letter-spacing:2px;text-transform:uppercase">Концепт-рендер</p>
+<div style="position:absolute;left:128px;top:96px;width:800px;height:888px;display:flex;flex-direction:column;justify-content:center;gap:34px">
+<div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">05 /</span> Продукт</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div>
+<div style="display:flex;flex-direction:column;gap:18px">
+<h1 style="font-size:124px;font-weight:700;letter-spacing:-5px;line-height:.95">Ateno&nbsp;AX</h1>
+<p style="font-size:34px;line-height:1.25;color:#6e6e73;font-weight:500;letter-spacing:-.4px">Один чип строит карту и рендерит её.<br>На устройстве, без связи.</p></div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<div data-build-in="fade 1" style="display:flex;gap:28px;align-items:baseline;border-top:1px solid #e5e5ea;padding:16px 0 0"><p style="width:170px;flex:none;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:16px;letter-spacing:2.5px;color:#86868b;text-transform:uppercase">Вход</p><p style="font-size:25px;line-height:1.3;color:#1d1d1f">Кадры с собственных камер робота</p></div>
+<div data-build-in="fade 2" style="display:flex;gap:28px;align-items:baseline;border-top:1px solid #e5e5ea;padding:16px 0 0"><p style="width:170px;flex:none;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:16px;letter-spacing:2.5px;color:#86868b;text-transform:uppercase">Строит</p><p style="font-size:25px;line-height:1.3;color:#1d1d1f">3D-карту из гауссиан, обучаемую на чипе</p></div>
+<div data-build-in="fade 3" style="display:flex;gap:28px;align-items:baseline;border-top:1px solid #e5e5ea;padding:16px 0 0"><p style="width:170px;flex:none;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:16px;letter-spacing:2.5px;color:#86868b;text-transform:uppercase">Рендерит</p><p style="font-size:25px;line-height:1.3;color:#1d1d1f">Фотореалистичные виды, сейчас 1080p</p></div>
+<div data-build-in="fade 4" style="display:flex;gap:28px;align-items:baseline;border-top:1px solid #e5e5ea;padding:16px 0 0"><p style="width:170px;flex:none;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:16px;letter-spacing:2.5px;color:#86868b;text-transform:uppercase">Связь</p><p style="font-size:25px;line-height:1.3;color:#1d1d1f">Не нужна. Данные не покидают устройство</p></div>
+<div data-build-in="fade 5" style="display:flex;gap:28px;align-items:baseline;border-top:1px solid #e5e5ea;padding:16px 0 0"><p style="width:170px;flex:none;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:16px;letter-spacing:2.5px;color:#86868b;text-transform:uppercase">Формат</p><p style="font-size:25px;line-height:1.3;color:#1d1d1f">Модуль или IP-блок внутри SoC</p></div>
+<div data-build-in="fade 6" style="display:flex;gap:28px;align-items:baseline;border-top:1px solid #e5e5ea;padding:16px 0 0"><p style="width:170px;flex:none;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:16px;letter-spacing:2.5px;color:#86868b;text-transform:uppercase">Позы камер</p><p style="font-size:25px;line-height:1.3;color:#1d1d1f">Сейчас программно (COLMAP); на чипе — дальше</p></div>
+<div data-build-in="fade 7" style="display:flex;gap:28px;align-items:baseline;border-top:1px solid #e5e5ea;padding:16px 0 0"><p style="width:170px;flex:none;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:16px;letter-spacing:2.5px;color:#86868b;text-transform:uppercase">Статус</p><p style="font-size:25px;line-height:1.3;color:#5b3fd6">Рендеринг и обучение работают на FPGA</p></div>
+</div></div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">05 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Ateno AX — один чип для одной задачи: он обучает 3D-карту и рендерит её на устройстве, без связи. Изображение чипа — концепт-рендер. Точно о том, что есть: рендеринг и обучение работают на нашем FPGA-прототипе; позы камер пока считаются программно.</aside>
+</section>
+<section class="slide dk" id="module" data-transition="push" style="background:#05050a;color:#f5f5f7;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<img src="assets/device-main.webp" alt="Концепт-рендер модуля Ateno AX, подключённого к ноутбуку кабелем USB-C" style="position:absolute;left:0;top:0;width:1920px;height:1080px;object-fit:cover;object-position:30% 50%">
+<div style="position:absolute;left:0;top:0;width:1920px;height:1080px;background:linear-gradient(200deg,rgba(5,5,10,.82) 0%,rgba(5,5,10,.35) 38%,rgba(5,5,10,0) 60%)"></div>
+<div style="position:absolute;right:120px;top:128px;width:900px;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#a593f5;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">06 /</span> Форм-фактор</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div>
+<h2 data-build-in="rise 1" style="font-size:76px;font-weight:700;letter-spacing:-3px;line-height:1.05">Один небольшой модуль. <br><span style="color:#c7c7cc">Подключается к роботу.</span></h2>
+<p data-build-in="rise 2" style="font-size:32px;line-height:1.4;color:#d2d2d7">Первый продукт — edge-модуль с чипом. Позже тот же дизайн как IP-блок внутри SoC.</p>
+</div>
+<p style="position:absolute;left:72px;top:64px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:3px">Концепт-рендер</p>
+
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">06 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Так мог бы выглядеть первый продукт: небольшой вычислительный модуль на роботе. Это концепт-рендер, модуль ещё не собран. Сегодня есть дизайн, работающий на FPGA.</aside>
+</section>
+<section class="slide dk" id="proof" data-transition="push" data-section="Доказательства" style="background:#05050a;color:#f5f5f7;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:1032px;top:100px;width:760px;height:760px;border-radius:6px;overflow:hidden;background:#000">
+<video src="assets/buildup.mp4" poster="assets/fpga-frame.jpg" muted playsinline autoplay style="width:760px;height:760px;object-fit:cover"></video></div>
+<p style="position:absolute;left:1032px;top:876px;width:760px;font-size:24px;color:#86868b;text-align:left">Сборка иллюстративна. Финальный кадр — наш рендер на FPGA (AWS F2).</p>
+<div style="position:absolute;left:128px;top:150px;width:840px;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#a593f5;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">07 /</span> Что уже работает</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:80px;font-weight:700;letter-spacing:-2.6px;line-height:1.05;">Этот кадр отрендерило наше железо.</h2></div>
+<div style="position:absolute;left:128px;top:560px;width:840px;display:grid;grid-template-columns:1fr 1fr;gap:48px 48px">
+<div data-build-in="rise 1"><p style="font-size:84px;font-weight:700;letter-spacing:-3px;line-height:1"><span data-count="173161">173 161</span></p><p style="font-size:26px;color:#a1a1a6;margin-top:10px">гауссиан в сцене</p></div>
+<div data-build-in="rise 2"><p style="font-size:84px;font-weight:700;letter-spacing:-3px;line-height:1"><span data-count="2073600">2 073 600</span></p><p style="font-size:26px;color:#a1a1a6;margin-top:10px">пикселей посчитал наш дизайн</p></div>
+<div data-build-in="rise 3"><p style="font-size:84px;font-weight:700;letter-spacing:-3px;line-height:1">1080p</p><p style="font-size:26px;color:#a1a1a6;margin-top:10px">целиком на FPGA</p></div>
+<div data-build-in="rise 4"><p style="font-size:84px;font-weight:700;letter-spacing:-3px;line-height:1">Закрыт</p><p style="font-size:26px;color:#a1a1a6;margin-top:10px">тайминг на AWS F2</p></div>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">07 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Полный рендеринг 1080p прошёл целиком на FPGA AWS F2, сентябрь 2026. Анимация сборки иллюстративна, финальный кадр — вывод FPGA. Если спросят про GPU: сегодня FPGA примерно в 70 раз медленнее NVIDIA L4 на этом кадре (262 мс против ~3,7 мс). В кремний переносится число тактов, а не время на FPGA.</aside>
+</section>
+<section class="slide" id="speed" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:128px;top:128px;width:900px;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">08 /</span> Прогресс</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:84px;font-weight:700;letter-spacing:-2.7px;line-height:1.05;">С одной секунды до 262 мс. <br><span style="color:#86868b">За десять дней.</span></h2></div>
+<div data-build-in="rise 1" style="position:absolute;left:128px;top:520px;width:700px;display:flex;flex-direction:column;gap:18px">
+<p style="font-size:220px;font-weight:800;letter-spacing:-9px;line-height:.95;background:linear-gradient(90deg, #a78bfa, #60a5fa 55%, #34d399);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">3,9×</p>
+<p style="font-size:34px;line-height:1.35;color:#6e6e73">быстрее кадр: та же сцена 1080p,<br>173 161 гауссиан, ядро FPGA на 100 МГц.</p>
+</div>
+<div class="card" style="position:absolute;left:1020px;top:300px;width:772px;height:660px;background:#f2f2f5;border-radius:36px;display:flex;align-items:end;justify-content:center;gap:120px;padding:0 0 40px">
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:end;gap:18px;width:220px;height:560px"><p data-build-in="fade 2" style="font-size:44px;font-weight:700;letter-spacing:-1px;color:#1d1d1f;white-space:nowrap">1,02 с</p><div class="growh" style="width:160px;height:420px;border-radius:3px;background:repeating-linear-gradient(135deg,#4b4b52 0 3px,#ececf0 3px 12px)"></div><p style="font-size:26px;color:#6e6e73">31 авг</p></div>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:end;gap:18px;width:220px;height:560px"><p data-build-in="fade 3" style="font-size:44px;font-weight:700;letter-spacing:-1px;color:#1d1d1f;white-space:nowrap">262 мс</p><div class="growh" style="width:160px;height:108px;border-radius:3px;background:linear-gradient(0deg, #a78bfa, #60a5fa 55%, #34d399)"></div><p style="font-size:26px;color:#6e6e73">10 сен</p></div>
+</div>
+<p style="position:absolute;left:128px;top:930px;width:860px;font-size:24px;color:#86868b">Пока не быстро, и мы точно знаем почему: следующий слайд.</p>
+
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">08 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Та же сцена, то же разрешение. 1,02 с 31 августа, 262 мс 10 сентября: в 3,9 раза быстрее. Пока не быстро: следующий слайд показывает, куда уходит время.</aside>
+</section>
+<section class="slide" id="bottleneck" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:128px;top:128px;width:1664px;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">09 /</span> Куда уходит время</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:80px;font-weight:700;letter-spacing:-2.6px;line-height:1.05;">Три четверти каждого кадра — сортировка. <br><span style="color:#86868b">Это мы чиним следующим.</span></h2></div>
+<div data-build-in="pop 1" style="position:absolute;left:150px;top:400px;width:520px;height:520px">
+<svg aria-label="Frame time breakdown: frontend 19%, sorting 75%, render 6%" width="520" height="520" viewBox="0 0 520 520" style="position:absolute;left:0;top:0;width:520px;height:520px"><defs><linearGradient id="sortg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset=".55" stop-color="#60a5fa"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs><circle cx="260" cy="260" r="200" fill="none" stroke="#d2d2d7" stroke-width="64" stroke-dasharray="232.8 1256.6" stroke-dashoffset="0.0" transform="rotate(-90 260 260)"/><circle cx="260" cy="260" r="200" fill="none" stroke="url(#sortg)" stroke-width="64" stroke-dasharray="936.5 1256.6" stroke-dashoffset="-238.8" transform="rotate(-90 260 260)"/><circle cx="260" cy="260" r="200" fill="none" stroke="#aeaeb2" stroke-width="64" stroke-dasharray="69.4 1256.6" stroke-dashoffset="-1181.2" transform="rotate(-90 260 260)"/></svg>
+<p style="position:absolute;left:0;top:200px;width:520px;text-align:center;font-size:76px;font-weight:800;letter-spacing:-2.5px">262 мс</p>
+<p style="position:absolute;left:0;top:296px;width:520px;text-align:center;font-size:26px;color:#86868b">на кадр 1080p</p>
+</div>
+<div style="position:absolute;left:1000px;top:440px;width:792px;display:flex;flex-direction:column;gap:34px">
+<div data-build-in="rise 2" style="display:flex;flex-direction:column;gap:14px;border-top:1px solid #e5e5ea;padding-top:26px"><div style="display:flex;align-items:baseline;justify-content:space-between"><p style="font-size:34px;font-weight:700;color:#5b3fd6">Сортировка</p><p style="font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:#5b3fd6">75%<span style="color:#86868b"> · ≈197 мс</span></p></div><div style="height:10px;width:560px;border-radius:2px;background:#ececf0"><div class="grow" style="height:10px;width:420px;border-radius:2px;background:linear-gradient(90deg, #a78bfa, #60a5fa 55%, #34d399)"></div></div></div>
+<div data-build-in="rise 3" style="display:flex;flex-direction:column;gap:14px;border-top:1px solid #e5e5ea;padding-top:26px"><div style="display:flex;align-items:baseline;justify-content:space-between"><p style="font-size:34px;font-weight:600;color:#1d1d1f">Фронтенд</p><p style="font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:#1d1d1f">19%<span style="color:#86868b"> · ≈50 мс</span></p></div><div style="height:10px;width:560px;border-radius:2px;background:#ececf0"><div class="grow" style="height:10px;width:106px;border-radius:2px;background:#8e8e93"></div></div></div>
+<div data-build-in="rise 4" style="display:flex;flex-direction:column;gap:14px;border-top:1px solid #e5e5ea;padding-top:26px"><div style="display:flex;align-items:baseline;justify-content:space-between"><p style="font-size:34px;font-weight:600;color:#1d1d1f">Рендер</p><p style="font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:#1d1d1f">6%<span style="color:#86868b"> · ≈16 мс</span></p></div><div style="height:10px;width:560px;border-radius:2px;background:#ececf0"><div class="grow" style="height:10px;width:33px;border-radius:2px;background:#aeaeb2"></div></div></div>
+</div>
+<p style="position:absolute;left:128px;top:940px;width:1664px;font-size:24px;color:#86868b">Измерено на нашей FPGA (1080p, 100 МГц); мс — доля от 262 мс. Наше узкое место, а не GPU.</p>
+
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">09 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Это наше узкое место на FPGA, а не проблема GPU: на GPU сортировка — около 12% времени обучения. Следующий шаг — ускорить блок сортировки. Миллисекунды — это проценты от 262 мс.</aside>
+</section>
+<section class="slide" id="training" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:128px;top:128px;width:1664px;display:flex;flex-direction:column;gap:26px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">10 /</span> Обучение в железе</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:72px;font-weight:700;letter-spacing:-2.3px;line-height:1.05;">Другие ускорители умеют только рендер. <br><span style="color:#86868b">Весь цикл обучения работает на нашем FPGA.</span></h2></div>
+<div data-build-in="rise 1" class="card" style="position:absolute;left:128px;top:430px;width:360px;height:230px;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:30px 30px;display:flex;flex-direction:column;justify-content:space-between"><div><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:18px;letter-spacing:2px;color:#86868b">01</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;margin-top:8px">Рендер</h3><p style="font-size:24px;color:#6e6e73;margin-top:4px">гауссианы → кадр</p></div><p style="align-self:start;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:#1f8a52;background:rgba(48,164,108,.12);padding:7px 12px;border-radius:3px">✓ На FPGA</p></div>
+<div data-build-in="rise 2" class="card" style="position:absolute;left:562px;top:430px;width:360px;height:230px;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:30px 30px;display:flex;flex-direction:column;justify-content:space-between"><div><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:18px;letter-spacing:2px;color:#86868b">02</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;margin-top:8px">Сравнение</h3><p style="font-size:24px;color:#6e6e73;margin-top:4px">с кадром камеры</p></div><p style="align-self:start;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:#1f8a52;background:rgba(48,164,108,.12);padding:7px 12px;border-radius:3px">✓ На FPGA</p></div>
+<div data-build-in="rise 3" class="card" style="position:absolute;left:996px;top:430px;width:360px;height:230px;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:30px 30px;display:flex;flex-direction:column;justify-content:space-between"><div><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:18px;letter-spacing:2px;color:#86868b">03</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;margin-top:8px">Backprop</h3><p style="font-size:24px;color:#6e6e73;margin-top:4px">градиенты</p></div><p style="align-self:start;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:#1f8a52;background:rgba(48,164,108,.12);padding:7px 12px;border-radius:3px">✓ На FPGA</p></div>
+<div data-build-in="rise 4" class="card hi" style="position:absolute;left:1430px;top:430px;width:360px;height:230px;background:#ede9fe;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:30px 30px;display:flex;flex-direction:column;justify-content:space-between"><div><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:18px;letter-spacing:2px;color:#86868b">04</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;margin-top:8px">Шаг Adam</h3><p style="font-size:24px;color:#6e6e73;margin-top:4px">новые гауссианы</p></div><p style="align-self:start;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:#1f8a52;background:rgba(48,164,108,.12);padding:7px 12px;border-radius:3px">✓ На FPGA</p></div>
+<svg aria-hidden="true" width="74" height="40" viewBox="0 0 74 40" style="position:absolute;left:488px;top:540px;width:74px;height:40px"><path d="M10 20H60" stroke="#8b7cf6" stroke-width="2.5"/><path d="M52 11L64 20L52 29" fill="none" stroke="#8b7cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><svg aria-hidden="true" width="74" height="40" viewBox="0 0 74 40" style="position:absolute;left:922px;top:540px;width:74px;height:40px"><path d="M10 20H60" stroke="#8b7cf6" stroke-width="2.5"/><path d="M52 11L64 20L52 29" fill="none" stroke="#8b7cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><svg aria-hidden="true" width="74" height="40" viewBox="0 0 74 40" style="position:absolute;left:1356px;top:540px;width:74px;height:40px"><path d="M10 20H60" stroke="#8b7cf6" stroke-width="2.5"/><path d="M52 11L64 20L52 29" fill="none" stroke="#8b7cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<svg aria-hidden="true" width="1664" height="110" viewBox="0 0 1664 110" style="position:absolute;left:128px;top:672px;width:1664px;height:110px"><defs><marker id="lh" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b7cf6"/></marker></defs><path d="M1482 4V70H180V12" fill="none" stroke="#8b7cf6" stroke-width="2.5" stroke-dasharray="8 7" marker-end="url(#lh)"/></svg>
+<p style="position:absolute;left:128px;top:752px;width:1664px;text-align:center;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:2px;color:#6d4fe0;text-transform:uppercase">Повторяется тысячи раз на сцену</p>
+<div style="position:absolute;left:128px;top:826px;width:1664px;display:flex;gap:48px">
+<div data-build-in="fade 5" style="flex:1;display:flex;align-items:baseline;gap:18px;border-top:1px solid #e5e5ea;padding-top:20px"><p style="font-size:64px;font-weight:700;letter-spacing:-2px;line-height:1">13×</p><p style="font-size:24px;color:#6e6e73;line-height:1.3">быстрее шаг Adam на FPGA<br>против нашей CPU-версии (1 гауссиан)</p></div>
+<div data-build-in="fade 6" style="flex:1;display:flex;align-items:baseline;gap:18px;border-top:1px solid #e5e5ea;padding-top:20px"><p style="font-size:64px;font-weight:700;letter-spacing:-2px;line-height:1">723</p><p style="font-size:24px;color:#6e6e73;line-height:1.3">тестов проходят<br>в регрессионном наборе</p></div>
+<div data-build-in="fade 7" style="flex:1;display:flex;align-items:baseline;gap:18px;border-top:1px solid #e5e5ea;padding-top:20px"><p style="font-size:64px;font-weight:700;letter-spacing:-2px;line-height:1">20</p><p style="font-size:24px;color:#6e6e73;line-height:1.3">пунктов в нашей<br>патентной заявке в ОАЭ</p></div>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">10 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Это стандартный шаг обучения 3DGS: рендер, сравнение с кадром камеры, обратный проход, обновление. Все четыре этапа работают на нашем FPGA-прототипе. 13× — шаг Adam, измеренный на одном гауссиане (51 мкс против 665 на CPU). Дальше: большие сцены и энергоэффективность.</aside>
+</section>
+<section class="slide" id="roadmap" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:72px">
+
+<div style="display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">11 /</span> Дорожная карта</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:88px;font-weight:700;letter-spacing:-2.8px;line-height:1.05;">Сначала доказательство на FPGA. <br><span style="color:#86868b">Кремний — только потом.</span></h2></div>
+<div style="display:flex;gap:32px">
+<div data-build-in="rise 1" class="card" style="flex:1;border-radius:32px;padding:52px;border:3px solid #e5e5ea;background:#f5f5f7;display:flex;flex-direction:column;gap:18px"><p style="font-size:24px;font-weight:600;color:#6d4fe0">Сделано · июнь–нояб 2026</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Рабочий прототип</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Рендеринг 1080p и полное обучение на FPGA. 723 теста проходят.</p></div>
+<div data-build-in="rise 2" class="card" style="flex:1;border-radius:32px;padding:52px;border:3px solid transparent;background:linear-gradient(#fbfbfd,#fbfbfd) padding-box,linear-gradient(90deg, #a78bfa, #60a5fa 55%, #34d399) border-box;display:flex;flex-direction:column;gap:18px"><p style="font-size:24px;font-weight:600;color:#6d4fe0">Этот раунд</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Масштаб и эффективность</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Большие реальные сцены. Бенчмарк энергии против Jetson и GPU.</p></div>
+<div data-build-in="rise 3" class="card" style="flex:1;border-radius:32px;padding:52px;border:3px solid #e5e5ea;background:#f5f5f7;display:flex;flex-direction:column;gap:18px"><p style="font-size:24px;font-weight:600;color:#6d4fe0">После доказательства</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Кремний</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Выбор техпроцесса по измеренным требованиям. Tape-out с дизайн-партнёрами.</p></div>
+</div>
+<p style="font-size:26px;color:#86868b">Никакого tape-out, пока производительность, энергопотребление и экономика не доказаны на FPGA.</p>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">11 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Tape-out зависит от результатов второй фазы. Не обещать дату кремния.</aside>
+</section>
+<section class="slide dk" id="market" data-transition="push" data-section="Бизнес" style="background:#05050a;color:#f5f5f7;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:0;top:0;width:1920px;height:1080px;background:radial-gradient(circle at 75% 60%, rgba(30,70,130,.45) 0%, rgba(0,0,0,0) 60%)"></div>
+<div style="position:absolute;left:128px;top:128px;display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#a593f5;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">12 /</span> Рынок</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:88px;font-weight:700;letter-spacing:-2.8px;line-height:1.05;">Каждому движущемуся роботу <br><span style="color:#7c7c85">нужно видеть в 3D.</span></h2></div>
+<div style="position:absolute;left:128px;top:450px;width:1664px;display:flex;gap:96px">
+<div data-build-in="rise 1"><p style="font-size:150px;font-weight:800;letter-spacing:-6px;line-height:1">2,8 млн</p><p style="font-size:30px;color:#a1a1a6;margin-top:16px">мобильных роботов в год к 2030<br>(ABI Research)</p></div>
+<div data-build-in="rise 2"><p style="font-size:150px;font-weight:800;letter-spacing:-6px;line-height:1;background:linear-gradient(90deg, #a78bfa, #60a5fa 55%, #34d399);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">$170–560 млн</p><p style="font-size:30px;color:#a1a1a6;margin-top:16px">в год на модулях при 20% проникновения и<br>$300–1&#160;000 за штуку, только мобильные роботы</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:120px;font-size:24px;color:#6e6e73">Без учёта дронов, других автономных систем и лицензирования IP. Сценарий, а не прогноз.</p>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">12 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>2,8 млн × 20% × $300 ≈ $170 млн; × $1 000 ≈ $560 млн. Дроны, другие автономные системы и роялти за IP — дополнительный потенциал.</aside>
+</section>
+<section class="slide" id="applications" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:52px">
+
+<div style="display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">13 /</span> Применения</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:76px;font-weight:700;letter-spacing:-2.4px;line-height:1.05;">Для автономных машин <br><span style="color:#86868b">там, где GPS ненадёжен.</span></h2></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+<div data-build-in="rise 1" style="background:#ede9fe;border:2px solid #c4b5fd;border-radius:4px;padding:20px;display:flex;gap:32px;align-items:center"><div style="position:relative;width:300px;height:180px;flex:none;border-radius:3px;overflow:hidden;background:#000"><img src="assets/map-bridge.webp" alt="" style="width:300px;height:180px;object-fit:cover"></div><div><h3 style="font-size:36px;font-weight:700;letter-spacing:-1px">Дроны в помещениях</h3><p style="font-size:26px;color:#4b4b52;margin-top:8px;line-height:1.35">Полёты внутри зданий, складов и промышленных объектов.</p></div></div>
+<div data-build-in="rise 2" style="background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:4px;padding:20px;display:flex;gap:32px;align-items:center"><div style="position:relative;width:300px;height:180px;flex:none;border-radius:3px;overflow:hidden;background:#000"><img src="assets/map-construction.webp" alt="" style="width:300px;height:180px;object-fit:cover"></div><div><h3 style="font-size:36px;font-weight:700;letter-spacing:-1px">Наземные роботы</h3><p style="font-size:26px;color:#6e6e73;margin-top:8px;line-height:1.35">Неизвестная или меняющаяся местность, без связи с сервером.</p></div></div>
+<div data-build-in="rise 3" style="background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:4px;padding:20px;display:flex;gap:32px;align-items:center"><div style="position:relative;width:300px;height:180px;flex:none;border-radius:3px;overflow:hidden;background:#000"><img src="assets/map-floor.webp" alt="" style="width:300px;height:180px;object-fit:cover"></div><div><h3 style="font-size:36px;font-weight:700;letter-spacing:-1px">Инфраструктура</h3><p style="font-size:26px;color:#6e6e73;margin-top:8px;line-height:1.35">Инспекция объектов, где данные должны оставаться на месте.</p></div></div>
+<div data-build-in="rise 4" style="background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:4px;padding:20px;display:flex;gap:32px;align-items:center"><div style="position:relative;width:300px;height:180px;flex:none;border-radius:3px;overflow:hidden;background:#000"><img src="assets/map-tunnel.webp" alt="" style="width:300px;height:180px;object-fit:cover"></div><div><h3 style="font-size:36px;font-weight:700;letter-spacing:-1px">Тоннели и подземные объекты</h3><p style="font-size:26px;color:#6e6e73;margin-top:8px;line-height:1.35">Шахты, тоннели и подземные пространства без сигнала.</p></div></div>
+</div>
+<p style="font-size:26px;color:#86868b">Всем им нужно одно: карта, построенная на борту, в реальном времени, без передачи данных наружу.</p>
+<p style="position:absolute;right:72px;top:72px;font-size:20px;color:#86868b">Карты: симуляции, иллюстрации</p>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">13 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Общая нить — работа без GPS и без связи: машинам нужно строить карту и находить себя на ней прямо на борту. Карты на картинках — симуляции с нашего сайта.</aside>
+</section>
+<section class="slide" id="model" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:72px">
+
+<div style="display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">14 /</span> Бизнес-модель</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:88px;font-weight:700;letter-spacing:-2.8px;line-height:1.05;">Три источника выручки.</h2></div>
+<div style="display:flex;gap:32px">
+<div data-build-in="rise 1" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:52px;display:flex;flex-direction:column;gap:18px"><p class="tag">01</p><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:20px;letter-spacing:2px;text-transform:uppercase;color:#6d4fe0">Сначала</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Дизайн-партнёрства</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Производители дронов и роботов оплачивают адаптацию чипа под свою систему. Около $120 тыс. каждое.</p></div>
+<div data-build-in="rise 2" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:52px;display:flex;flex-direction:column;gap:18px"><p class="tag">02</p><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:20px;letter-spacing:2px;text-transform:uppercase;color:#6d4fe0">Затем</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Вычислительные модули</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Бортовой модуль за $300–1&#160;000 в каждом роботе, который строит карту.</p></div>
+<div data-build-in="rise 3" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:52px;display:flex;flex-direction:column;gap:18px"><p class="tag">03</p><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:20px;letter-spacing:2px;text-transform:uppercase;color:#6d4fe0">На масштабе</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Лицензирование IP</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Роялти с каждого чипа для производителей SoC, встраивающих наш блок.</p></div>
+</div>
+<p style="font-size:26px;color:#86868b">Выручки пока нет. Первое, что мы продаём, — дизайн-партнёрства.</p>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">14 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Начинаем с платных дизайн-партнёрств: они финансируют разработку и подтверждают спрос до кремния.</aside>
+</section>
+<section class="slide" id="competition" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:72px">
+
+<div style="display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">15 /</span> Конкуренты</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:84px;font-weight:700;letter-spacing:-2.7px;line-height:1.05;">Сегодняшние edge-чипы не создавались <br><span style="color:#86868b">для построения карт.</span></h2></div>
+<div data-build-in="fade 1" style="display:flex;flex-direction:column">
+<div style="display:flex;padding:0 28px 18px"><p style="width:30%;font-size:24px;color:#86868b">Кто</p><p style="width:38%;font-size:24px;color:#86868b">Что делают</p><p style="width:32%;font-size:24px;color:#86868b">Чего не хватает</p></div>
+<div style="display:flex;border-top:1px solid #e5e5ea;padding:30px 28px;border-radius:0"><p style="width:30%;font-size:30px;">NVIDIA Jetson, Qualcomm</p><p style="width:38%;font-size:30px;color:#4b4b52;">Универсальные edge-вычисления</p><p style="width:32%;font-size:30px;color:#6e6e73;">0,4–5 к/с на Gaussian SLAM</p></div>
+<div style="display:flex;border-top:1px solid #e5e5ea;padding:30px 28px;border-radius:0"><p style="width:30%;font-size:30px;">Edge-AI NPU</p><p style="width:38%;font-size:30px;color:#4b4b52;">Ускоряют нейросети</p><p style="width:32%;font-size:30px;color:#6e6e73;">Не под поток данных 3DGS; партнёры</p></div>
+<div style="display:flex;border-top:1px solid #e5e5ea;padding:30px 28px;border-radius:0"><p style="width:30%;font-size:30px;">Академические ускорители</p><p style="width:38%;font-size:30px;color:#4b4b52;">GSCore, StreamingGS и другие</p><p style="width:32%;font-size:30px;color:#6e6e73;">Не продукты; в основном рендер</p></div>
+<div style="display:flex;background:#ede9fe;border-top:1px solid #e5e5ea;padding:30px 28px;border-radius:4px"><p style="width:30%;font-size:30px;font-weight:700;">Ateno</p><p style="width:38%;font-size:30px;color:#4b4b52;font-weight:700;">Обучение и рендер в железе</p><p style="width:32%;font-size:30px;color:#5b3fd6;font-weight:700;">Сделан для робота</p></div>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">15 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Компании edge-AI NPU ускоряют нейросети, поэтому они скорее партнёры, чем конкуренты.</aside>
+</section>
+<section class="slide" id="traction" data-transition="push" data-section="Команда и раунд" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:52px">
+
+<div style="display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">16 /</span> Тракшн</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:92px;font-weight:700;letter-spacing:-2.9px;line-height:1.05;">Рано, но по-настоящему.</h2></div>
+<div style="display:flex;gap:32px">
+<div data-build-in="rise 1" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:52px;display:flex;flex-direction:column;gap:20px"><p class="tag">01</p><div class="ibox"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 64 64" style="width:44px;height:44px"><g fill="none" stroke="#6d4fe0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 24 32 12l28 12-28 12z"/><path d="M16 30v12c0 4 8 8 16 8s16-4 16-8V30"/><path d="M58 25v14"/></g></svg></div><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;color:#1d1d1f">Пилот</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Исследовательский пилот с группой S.M.A.R.T. Construction Research в NYU Abu Dhabi.</p></div>
+<div data-build-in="rise 2" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:52px;display:flex;flex-direction:column;gap:20px"><p class="tag">02</p><div class="ibox"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 64 64" style="width:44px;height:44px"><g fill="none" stroke="#6d4fe0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="32" height="32" rx="4"/><rect x="25" y="25" width="14" height="14" rx="2"/><path d="M24 8v8M32 8v8M40 8v8M24 48v8M32 48v8M40 48v8M8 24h8M8 32h8M8 40h8M48 24h8M48 32h8M48 40h8"/></g></svg></div><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;color:#1d1d1f">Индустрия</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Крупная технологическая компания видит в нашей технологии сильный потенциал.</p></div>
+<div data-build-in="rise 3" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:52px;display:flex;flex-direction:column;gap:20px"><p class="tag">03</p><div class="ibox"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 64 64" style="width:44px;height:44px"><g fill="none" stroke="#6d4fe0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="22" r="9"/><path d="M6 54c0-10 7-16 16-16s16 6 16 16"/><circle cx="44" cy="24" r="7"/><path d="M42 38c9 0 16 5 16 14"/></g></svg></div><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;color:#1d1d1f">Спрос</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">30+ интервью с практиками; несколько готовы платить $3–5 тыс. за проект.</p></div>
+<div data-build-in="rise 4" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:52px;display:flex;flex-direction:column;gap:20px"><p class="tag">04</p><div class="ibox"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 64 64" style="width:44px;height:44px"><g fill="none" stroke="#6d4fe0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h26l12 12v44H14z"/><path d="M40 4v12h12"/><path d="M22 28h22M22 36h22M22 44h12"/></g></svg></div><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px;color:#1d1d1f">Патент</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Подана патентная заявка в ОАЭ: 20 пунктов формулы на наше железо.</p></div>
+</div>
+<p style="font-size:26px;color:#86868b">Выручки и LOI пока нет. Пилот неоплачиваемый; готовность платить — устная.</p>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">16 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Честно о стадии: интерес и неоплачиваемый пилот, а не контракты. Не называть компанию до её согласия.</aside>
+</section>
+<section class="slide" id="team" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:72px">
+
+<div style="display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">17 /</span> Команда</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:84px;font-weight:700;letter-spacing:-2.7px;line-height:1.05;">От идеи до работающего железа <br><span style="color:#86868b">за пять месяцев.</span></h2></div>
+<div style="display:flex;gap:32px">
+<div data-build-in="rise 1" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:60px;display:flex;flex-direction:column;gap:18px"><img src="assets/sviat.webp" alt="" style="width:210px;height:210px;border-radius:6px;object-fit:cover"><h3 style="font-size:48px;font-weight:700;letter-spacing:-1.2px;margin-top:10px">Святослав Гладышев</h3><p style="font-size:30px;font-weight:600;color:#6d4fe0">Сооснователь и CEO</p><p style="font-size:28px;line-height:1.4;color:#6e6e73">Математика в NYU; исследования экситонов в двухслойном графене. Ранее сооснователь и CTO LevelUp.</p></div>
+<div data-build-in="rise 2" class="card" style="flex:1;background:#f2f2f5;border:1px solid rgba(0,0,0,.04);border-radius:32px;padding:60px;display:flex;flex-direction:column;gap:18px"><img src="assets/artemii.jpg" alt="" style="width:210px;height:210px;border-radius:6px;object-fit:cover"><h3 style="font-size:48px;font-weight:700;letter-spacing:-1.2px;margin-top:10px">Артемий Мавлитов</h3><p style="font-size:30px;font-weight:600;color:#6d4fe0">Сооснователь и CTO</p><p style="font-size:28px;line-height:1.4;color:#6e6e73">Отвечает за RTL. Data Science и математика в NYU. Призёр региональных этапов ICPC и CCPC.</p></div>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">17 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Рендеринг и обучение мы вдвоём построили примерно за пять месяцев, с июня по октябрь 2026.</aside>
+</section>
+<section class="slide" id="ask" data-transition="push" style="background:#fbfbfd;color:#1d1d1f;font-family:'Inter', -apple-system, Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:110px">
+
+<div style="display:flex;flex-direction:column;gap:28px"><div style="display:flex;align-items:center;gap:22px;width:100%"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:21px;font-weight:500;color:#6d4fe0;letter-spacing:3px;text-transform:uppercase;white-space:nowrap"><span style="color:#86868b">18 /</span> Раунд</p><div style="flex:1;height:1px;background:rgba(134,134,139,.35)"></div></div><h2 style="font-size:100px;font-weight:700;letter-spacing:-3.5px;line-height:1.05">Привлекаем pre-seed <br>на <span style="background:linear-gradient(90deg, #a78bfa, #60a5fa 55%, #34d399);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">$1,25 млн</span>.</h2></div>
+<div style="display:flex;gap:40px">
+<div data-build-in="rise 1" style="flex:1;border-top:2px solid #d2d2d7;padding-top:34px;display:flex;flex-direction:column;gap:14px"><p style="font-size:26px;font-weight:600;color:#6d4fe0">01</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Бенчмарк против GPU</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Энергия на кадр: FPGA против GPU и Jetson, на реальных сценах.</p></div>
+<div data-build-in="rise 2" style="flex:1;border-top:2px solid #d2d2d7;padding-top:34px;display:flex;flex-direction:column;gap:14px"><p style="font-size:26px;font-weight:600;color:#6d4fe0">02</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Большие сцены</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Обучение и рендеринг на больших реальных сценах.</p></div>
+<div data-build-in="rise 3" style="flex:1;border-top:2px solid #d2d2d7;padding-top:34px;display:flex;flex-direction:column;gap:14px"><p style="font-size:26px;font-weight:600;color:#6d4fe0">03</p><h3 style="font-size:40px;font-weight:700;letter-spacing:-1px">Дизайн-партнёры</h3><p style="font-size:28px;line-height:1.4;color:#6e6e73">Первые платные проекты с производителями дронов и автономных систем.</p></div>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">18 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Привлекаем $1,25 млн pre-seed. Будь готов сказать, на что пойдут деньги и на сколько месяцев их хватит: три вехи на этом слайде.</aside>
+</section>
+<section class="slide dk" id="close" data-transition="push" style="background:#05050a;color:#f5f5f7;font-family:'Inter', -apple-system, Arial, sans-serif;">
+
+<div style="position:absolute;left:0;top:0;width:1920px;height:1080px;background:radial-gradient(circle at 50% 45%, rgba(60,40,140,.5) 0%, rgba(0,0,0,0) 62%)"></div>
+<div style="position:absolute;left:160px;top:300px;width:1600px;display:flex;flex-direction:column;align-items:center;gap:44px;text-align:center">
+<img data-build-in="pop 1" src="assets/logo.png" alt="Ateno logo" style="width:150px;height:auto">
+<h2 data-build-in="rise 2" style="font-size:112px;font-weight:700;letter-spacing:-4px;line-height:1.05">Строим карту <span style="background:linear-gradient(90deg, #a78bfa, #60a5fa 55%, #34d399);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">прямо на устройстве.</span></h2>
+<p data-build-in="fade 3" style="font-size:38px;color:#a1a1a6">Без GPS. Без облака. info@ateno.co · ateno.co</p>
+</div>
+<p style="position:absolute;left:72px;bottom:52px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">Pre-seed · ноябрь 2026</p><div style="position:absolute;right:72px;bottom:52px;display:flex;align-items:center;gap:16px"><p style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:19px;letter-spacing:1px;color:#6e6e73">19 / 19</p><img src="assets/logo.png" alt="Ateno" style="width:30px;height:auto;opacity:.9"></div>
+<aside>Спасибо.</aside>
+</section>
+
+</div></div>
+
+<div id="notes" class="glass"></div>
+<div id="grid" aria-label="All slides"><div id="gridin"></div></div>
+
+<header id="phead">
+  <button id="timer" title="Pause or resume">00:00</button>
+  <span id="clock"></span>
+  <div id="rehearse"></div>
+  <button id="pfs" hidden>Fill screen</button>
+  <div id="pstat">
+    <button id="pdevs" title="Phone remote"></button>
+    <button id="pclk" title="Clicker"></button>
+    <button id="pgear" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.500v2.200M12 18.300v2.200M3.500 12h2.200M18.300 12h2.200M6 6l1.550 1.550M16.450 16.450 18 18M6 18l1.550-1.550M16.450 7.550 18 6"/></svg></button>
+  </div>
+</header>
+<div id="pv">
+  <div class="lab" id="nextlab">Next</div>
+  <div id="nextwrap"></div>
+</div>
+<div id="pnotes"></div>
+
+<div id="start" class="scrim" role="dialog" aria-label="Settings">
+  <div class="sheet">
+    <div class="sheethead"><h2 id="starttitle">Settings</h2><button id="mskip" class="link">Done</button></div>
+    <p id="dstatus"></p>
+    <p class="grouplabel" id="picklabel">Show slides on</p>
+    <div class="group" id="picker"></div>
+    <div class="group">
+      <div class="rowi"><span>Fill the display</span><button id="sfull" role="switch" aria-checked="true" aria-label="Fill the display"></button></div>
+    </div>
+    <div class="group">
+      <button class="rowi" id="rowremote"><span>Phone remote</span><span class="val chev" id="remval">Off</span></button>
+      <div class="rowi" id="clkrow"><span>Clicker</span><span class="val" id="clkstate"></span><div class="mini"><button id="clkfind">Detect</button></div></div>
+    </div>
+    <div class="group" id="prow">
+      <div class="rowi"><span>Timer</span><div class="mini"><button id="tpause">Pause</button><button id="treset">Reset</button></div></div>
+      <div class="rowi"><span>Notes size</span><div class="mini"><button id="tsmall" aria-label="Smaller notes">−</button><button id="tlarge" aria-label="Larger notes">+</button></div></div>
+    </div>
+    <div class="group"><button class="rowi" id="rowhelp"><span>Keyboard shortcuts</span><span class="val chev"></span></button></div>
+    <button id="allow" class="btn primary" hidden>Find second display</button>
+    <div id="modes">
+      <button id="mslides" class="btn">Slides only</button>
+      <button id="mpres" class="btn primary">Start presenting</button>
+    </div>
+    <button id="mreset" class="link">Reset displays</button>
+  </div>
+</div>
+
+<div id="remote" class="scrim" role="dialog" aria-label="Phone remote">
+  <div class="sheet">
+    <div class="sheethead"><button id="rclose" class="link">Done</button></div>
+    <div id="rqrwrap"><div id="rqr"></div><div id="rok"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="m15 27 8 8 15-17"/></svg></div></div>
+    <h2 id="rtitle">Scan to connect</h2>
+    <p id="rhint"></p>
+    <p id="rstatus"></p>
+    <div id="rdevs" class="group"></div>
+    <a id="rlink" hidden></a>
+    <div id="rfoot"><button id="rnew">New code</button><button id="roff">Turn off</button></div>
+  </div>
+</div>
+
+<div id="help" class="scrim" role="dialog" aria-label="Keyboard shortcuts">
+  <div class="sheet">
+    <div class="sheethead"><h2>Keyboard shortcuts</h2><button id="hclose" class="link">Done</button></div>
+    <dl>
+      <dt>Next</dt><dd><kbd>→</kbd><kbd>Space</kbd></dd>
+      <dt>Previous</dt><dd><kbd>←</kbd></dd>
+      <dt>First or last slide</dt><dd><kbd>Home</kbd><kbd>End</kbd></dd>
+      <dt>Jump to a slide</dt><dd><kbd>12</kbd><kbd>Return</kbd></dd>
+      <dt>Viewer or Presenter</dt><dd><kbd>P</kbd></dd>
+      <dt>All slides</dt><dd><kbd>G</kbd></dd>
+      <dt>Settings</dt><dd><kbd>D</kbd></dd>
+      <dt>Phone remote</dt><dd><kbd>R</kbd></dd>
+      <dt>Speaker notes</dt><dd><kbd>N</kbd></dd>
+      <dt>Black screen</dt><dd><kbd>B</kbd></dd>
+      <dt>Full screen</dt><dd><kbd>F</kbd></dd>
+    </dl>
+  </div>
+</div>
+
+<div id="peek" class="glass"><img alt=""><div></div></div>
+<div id="jump" class="glass"></div>
+<div id="black"></div>
+
+<nav id="bar" class="glass" aria-label="Slide controls">
+  <div id="scrub" role="slider" aria-label="Slide position"></div>
+  <div id="row">
+    <button id="bprev" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M14.500 5.500 8 12l6.500 6.500"/></svg></button>
+    <span id="count"></span>
+    <button id="bnext" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9.500 5.500 16 12l-6.500 6.500"/></svg></button>
+    <div id="bstat"></div>
+    <div id="seg" role="group" aria-label="Mode">
+      <button data-m="viewer">Viewer</button>
+      <button data-m="presenter">Presenter</button>
+    </div>
+    <button id="bgrid" aria-label="All slides" title="All slides"><svg viewBox="0 0 24 24"><rect x="4" y="4.500" width="6.500" height="6.500" rx="1.600"/><rect x="13.500" y="4.500" width="6.500" height="6.500" rx="1.600"/><rect x="4" y="13.500" width="6.500" height="6.500" rx="1.600"/><rect x="13.500" y="13.500" width="6.500" height="6.500" rx="1.600"/></svg></button>
+    <button id="bpres" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.500v2.200M12 18.300v2.200M3.500 12h2.200M18.300 12h2.200M6 6l1.550 1.550M16.450 16.450 18 18M6 18l1.550-1.550M16.450 7.550 18 6"/></svg></button>
+    <button id="bfull" aria-label="Full screen" title="Full screen"><svg viewBox="0 0 24 24"><path d="M4.500 9V6.500a2 2 0 0 1 2-2H9M15 4.500h2.500a2 2 0 0 1 2 2V9M19.500 15v2.500a2 2 0 0 1-2 2H15M9 19.500H6.500a2 2 0 0 1-2-2V15"/></svg></button>
+  </div>
+</nav>
+
+<script>
+(() => {
+  const deck = document.getElementById('deck');
+  const slides = [...deck.querySelectorAll('section.slide')];
+  const N = slides.length;
+  const $ = id => document.getElementById(id);
+  const audience = new URLSearchParams(location.search).has('slides');   // the window shown on the projector
+  const slidesId = new URLSearchParams(location.search).get('slides');
+  let isPresenter = false;
+  const chan = 'BroadcastChannel' in window ? new BroadcastChannel('ateno-deck') : null;
+  const body = document.body;
+  let cur = -1, atTimer;
+
+  // check-circle icon used on result cards
+  document.querySelectorAll('x-icon').forEach(el => {
+    const s = el.getAttribute('style') || '';
+    el.outerHTML = `<svg viewBox="0 0 24 24" style="${s};flex:none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  });
+
+  // paint images only once decoded, so large figures never flash blank
+  deck.querySelectorAll('img').forEach(i => { i.decoding = 'sync'; });
+
+  const notesOf = s => (s.querySelector('aside')?.textContent || '').trim();
+  const thumb = i => `thumbs/${slides[i].id}.jpg`;
+  const titleOf = i => (slides[i].querySelector('h1,h2')?.textContent || slides[i].id).trim();
+
+  // chapters come from data-section on the first slide of each part
+  const chapters = [];
+  slides.forEach((s, i) => {
+    if (s.dataset.section || !chapters.length) chapters.push({ name: s.dataset.section || '', from: i, to: i });
+    chapters[chapters.length - 1].to = i;
+  });
+
+  // ---------- scale to window ----------
+  function fit() {
+    const st = $('stage').getBoundingClientRect();
+    const full = audience || !!document.fullscreenElement || (innerHeight >= screen.height - 1 && innerWidth >= screen.width - 1);
+    body.classList.toggle('full', full && !isPresenter);
+    const pad = isPresenter ? 16 : full ? 0 : innerWidth < 720 ? 6 : 24;
+    const k = Math.min((st.width - pad * 2) / 1920, (st.height - pad * 2) / 1080);
+    deck.style.transform = `translate(-50%,-50%) scale(${k})`;
+  }
+  addEventListener('resize', fit);
+  document.addEventListener('fullscreenchange', fit);
+
+  // ---------- build-in animations (step-by-step equations etc.) ----------
+  function resetBuilds(s) {
+    s.querySelectorAll('[data-build-in]').forEach(el => {
+      const [kind] = el.dataset.buildIn.split(/\s+/);
+      el.style.transition = 'none';
+      el.style.opacity = 0;
+      el.style.transform = kind === 'pop' ? 'scale(.85)' : kind === 'rise' ? 'translateY(28px)' : 'none';
+    });
+  }
+  // Delays are CSS, not timers: browsers throttle timers in background windows, which left content hidden.
+  // The presenter view always shows the whole slide at once.
+  function playBuilds(s) {
+    s.offsetWidth;
+    s.querySelectorAll('[data-build-in]').forEach(el => {
+      const order = parseInt(el.dataset.buildIn.split(/\s+/)[1] || '1', 10), d = 300 + order * 380;
+      el.style.transition = isPresenter ? 'none' : `opacity .5s ease ${d}ms, transform .65s cubic-bezier(.34,1.45,.64,1) ${d}ms`;
+      el.style.opacity = 1; el.style.transform = 'none';
+    });
+  }
+
+  // ---------- media: restart GIFs and live embeds on entry ----------
+  function countUp(s) {
+    s.querySelectorAll('[data-count]').forEach(el => {
+      const end = parseFloat(el.dataset.count), t0 = performance.now(), dur = 1400;
+      if (isPresenter) { el.textContent = end.toLocaleString('ru-RU'); return; }
+      const tick = t => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = Math.round(end * e).toLocaleString('ru-RU'); if (k < 1) requestAnimationFrame(tick); };
+      el.textContent = '0'; setTimeout(() => requestAnimationFrame(tick), 450);
+    });
+  }
+  function wakeMedia(s) {
+    deck.querySelectorAll('video').forEach(v => { if (!s.contains(v)) { try { v.pause(); } catch (e) {} } });
+    s.querySelectorAll('video').forEach(v => { try { v.currentTime = 0; const p = v.play(); if (p) p.catch(() => {}); } catch (e) {} });
+    countUp(s);
+    // a new fragment restarts a GIF while its last frame stays on screen; the presenter view leaves them running
+    if (!isPresenter) s.querySelectorAll('img[src*=".gif"]').forEach(img => { img.src = `${img.getAttribute('src').split('#')[0]}#${Date.now()}`; });
+    s.querySelectorAll('iframe[data-src]').forEach(f => { f.src = f.dataset.src; });
+  }
+
+  // ---------- navigation with transitions ----------
+  function go(n, opts = {}) {
+    n = Math.max(0, Math.min(N - 1, n));
+    if (n === cur) return;
+    const prev = cur >= 0 ? slides[cur] : null, next = slides[n];
+    const fwd = n > cur;
+    const kind = (fwd ? prev?.dataset.transition : next.dataset.transition) || 'fade';
+    const leap = Math.abs(n - cur) > 1;       // jumps from the grid or scrubber always cross-fade
+    resetBuilds(next);
+    if (prev && kind === 'push' && !opts.instant && !leap && !isPresenter) {
+      next.style.transition = 'none';
+      next.style.transform = `translateX(${fwd ? 100 : -100}%)`;
+      next.classList.add('active'); next.offsetWidth;
+      next.style.transition = ''; next.style.transform = 'translateX(0)';
+      prev.style.transform = `translateX(${fwd ? -100 : 100}%)`;
+    } else {
+      next.style.transform = '';
+      if (prev && kind === 'magic' && !leap && !isPresenter) {
+        prev.style.transition = 'opacity .3s, visibility 0s linear .3s';
+        next.style.transition = 'opacity .3s, visibility 0s';
+      }
+      next.classList.add('active');
+    }
+    if (prev) {
+      prev.classList.remove('active');
+      const p = prev, q = next;
+      setTimeout(() => { if (p !== slides[cur]) { p.style.transform = ''; p.style.transition = ''; } if (q === slides[cur]) q.style.transition = ''; }, 650);
+    }
+    cur = n;
+    wakeMedia(next); playBuilds(next);
+    $('count').innerHTML = `${n + 1} <i>/ ${N}</i>`;
+    $('bprev').disabled = n === 0;
+    $('bnext').disabled = n === N - 1;
+    chapters.forEach((c, i) => {
+      const done = Math.max(0, Math.min(c.to - c.from + 1, n - c.from + 1));
+      fills[i].style.width = `${(done / (c.to - c.from + 1)) * 100}%`;
+    });
+    $('scrub').setAttribute('aria-valuenow', n + 1);
+    $('notes').textContent = notesOf(next) || 'No notes for this slide.';
+    $('pnotes').textContent = notesOf(next);
+    renderNext();
+    tiles.forEach((a, i) => a.classList.toggle('cur', i === n));
+    if (!opts.fromHash) history.replaceState(null, '', `${location.search}#${n + 1}`);
+    if (chan && !opts.remote) chan.postMessage({ type: 'go', n });
+    if (remoteSeen && !opts.fromRemote) { clearTimeout(atTimer); atTimer = setTimeout(sayWhere, 400); }
+  }
+  const step = d => go(cur + d);
+
+  // the next-slide preview is the real slide, scaled down, so it is as sharp as the slide itself
+  function scaleNext() {
+    const c = $('nextwrap').firstElementChild;
+    if (c) c.style.transform = `scale(${$('nextwrap').clientWidth / 1920})`;
+  }
+  function renderNext() {
+    if (!isPresenter) return;
+    const wrap = $('nextwrap'), last = cur + 1 >= N;
+    wrap.textContent = last ? 'End of talk' : '';
+    wrap.classList.toggle('end', last);
+    $('nextlab').textContent = last ? 'Next' : `Next · ${cur + 2} of ${N}`;
+    if (last) return;
+    const c = slides[cur + 1].cloneNode(true);
+    c.removeAttribute('id'); c.setAttribute('aria-hidden', 'true');
+    c.querySelectorAll('[data-build-in]').forEach(el => { el.removeAttribute('data-build-in'); el.style.opacity = ''; el.style.transform = ''; el.style.transition = ''; });
+    c.querySelectorAll('iframe[data-src]').forEach(f => { f.src = f.dataset.src; });
+    wrap.append(c); scaleNext();
+  }
+  addEventListener('resize', scaleNext);
+
+  // ---------- chapter scrubber ----------
+  const scrub = $('scrub'), peek = $('peek');
+  scrub.setAttribute('aria-valuemin', 1); scrub.setAttribute('aria-valuemax', N);
+  scrub.innerHTML = chapters.map(c => `<div class="ch" style="--n:${c.to - c.from + 1}"><b></b></div>`).join('');
+  const fills = [...scrub.querySelectorAll('.ch b')];
+  const segs = [...scrub.querySelectorAll('.ch')];
+  function slideAtX(x) {
+    for (let i = 0; i < chapters.length; i++) {
+      const r = segs[i].getBoundingClientRect(), c = chapters[i], n = c.to - c.from + 1;
+      if (x <= r.right + 1.5 || i === chapters.length - 1)
+        return c.from + Math.max(0, Math.min(n - 1, Math.floor(((x - r.left) / r.width) * n)));
+    }
+    return 0;
+  }
+  function showPeek(x) {
+    const i = slideAtX(x), r = scrub.getBoundingClientRect(), w = peek.offsetWidth;
+    peek.querySelector('img').src = thumb(i);
+    peek.querySelector('div').innerHTML = `<span>${i + 1}</span>`;
+    peek.querySelector('div').append(titleOf(i));
+    peek.style.left = `${Math.max(10, Math.min(innerWidth - w - 10, x - w / 2))}px`;
+    peek.style.bottom = `${innerHeight - r.top + 12}px`;
+    peek.classList.add('on');
+  }
+  let scrubbing = false;
+  scrub.addEventListener('pointermove', e => { showPeek(e.clientX); if (scrubbing) go(slideAtX(e.clientX), { instant: true }); });
+  scrub.addEventListener('pointerleave', () => { if (!scrubbing) peek.classList.remove('on'); });
+  scrub.addEventListener('pointerdown', e => { scrubbing = true; scrub.setPointerCapture(e.pointerId); go(slideAtX(e.clientX)); });
+  scrub.addEventListener('pointerup', () => { scrubbing = false; peek.classList.remove('on'); });
+  scrub.addEventListener('pointercancel', () => { scrubbing = false; peek.classList.remove('on'); });
+
+  // ---------- overview ----------
+  $('gridin').innerHTML = chapters.map(c => {
+    let h = `<h2>${c.name}</h2><div class="tiles">`;
+    for (let i = c.from; i <= c.to; i++)
+      h += `<a href="#${i + 1}" data-i="${i}"><img loading="lazy" src="${thumb(i)}" alt=""><span><b>${i + 1}</b><em style="font-style:normal">${titleOf(i)}</em></span></a>`;
+    return h + '</div>';
+  }).join('');
+  const tiles = [...document.querySelectorAll('#grid a')];
+  let sel = 0;
+  const setSel = i => {
+    sel = Math.max(0, Math.min(N - 1, i));
+    tiles.forEach((a, j) => a.classList.toggle('sel', j === sel));
+    tiles[sel].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+  const closeOverlays = () => body.classList.remove('show-grid', 'show-help', 'show-notes');
+  const toggleGrid = () => {
+    body.classList.remove('show-help');
+    if (body.classList.toggle('show-grid')) {
+      setSel(cur);
+      tiles[cur].scrollIntoView({ block: 'center' });
+    }
+  };
+  const openTile = i => { body.classList.remove('show-grid'); go(i); };
+  $('grid').addEventListener('click', e => {
+    e.stopPropagation();
+    const a = e.target.closest('a');
+    if (a) { e.preventDefault(); openTile(+a.dataset.i); }
+    else body.classList.remove('show-grid');
+  });
+  const columns = () => {
+    const t = tiles[sel].parentElement;
+    return getComputedStyle(t).gridTemplateColumns.split(' ').length;
+  };
+
+  // ---------- controls ----------
+  const toggle = c => body.classList.toggle(c);
+  const fullOK = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  if (!fullOK) $('bfull').style.display = 'none';
+  const actions = {
+    bprev: () => step(-1),
+    bnext: () => step(1),
+    bgrid: toggleGrid,
+    bfull: () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(),
+    bpres: () => openStart()
+  };
+  Object.entries(actions).forEach(([id, fn]) => { $(id).onclick = e => { fn(); e.currentTarget.blur(); }; });
+  const setBlack = (on, remote) => {
+    body.classList.toggle('black', on);
+    if (chan && !remote) chan.postMessage({ type: 'black', on });
+  };
+
+  // ---------- start sheet: modes and displays ----------
+  // A browser only reaches a second display through the Window Management API (Chrome and Edge).
+  // Without it, the window has to be dragged across by hand, and the sheet says so.
+  const canPlace = 'getScreenDetails' in window;
+  let details = null, target = null, access = canPlace ? 'prompt' : 'none', startNote = '';
+  const allScreens = () => details?.screens || [];
+  const screenName = s => s.label || (s.isInternal ? 'Built-in display' : 'External display');
+  const pickTarget = () => {
+    const l = allScreens();
+    if (l.includes(target)) return;
+    target = l.find(s => !s.isInternal && s !== details.currentScreen) || l.find(s => !s.isInternal) || l.find(s => s !== details.currentScreen) || l[0] || null;
+  };
+  function renderStart() {
+    const l = allScreens(), many = l.length > 1;
+    const ext = !!window.screen.isExtended;
+    const ask = canPlace && !details && access === 'prompt' && ext;
+    let msg = '';
+    if (startNote) msg = startNote;
+    else if (ask) msg = 'A second display is connected. Allow access to use it.';
+    else if (access === 'denied') msg = 'Display access is blocked. Allow “Window management” in the site settings, or drag the slides across yourself.';
+    else if (!canPlace) msg = 'This browser cannot reach a second display. Use Chrome or Edge, or drag the slides across yourself.';
+    else if (!many) msg = 'One display found. To use another, set it to Extended in System Settings → Displays.';
+    $('dstatus').textContent = msg;
+    const picker = $('picker'); picker.textContent = '';
+    if (many) l.forEach(s => {
+      const b = document.createElement('button');
+      const name = document.createElement('span'); name.textContent = screenName(s);
+      b.append(name);
+      b.className = 'rowi' + (s === target ? ' on' : '');
+      b.setAttribute('aria-pressed', s === target);
+      b.onclick = () => { target = s; renderStart(); };
+      picker.append(b);
+    });
+    $('picklabel').hidden = !many;
+    $('prow').hidden = !isPresenter;
+    $('allow').hidden = !ask;
+    $('modes').hidden = ask;
+    $('mpres').textContent = isPresenter ? 'Move slides here' : 'Start presenting';
+  }
+  async function loadDisplays(ask) {
+    if (!canPlace) return renderStart();
+    if (!details) {
+      try { access = (await navigator.permissions.query({ name: 'window-management' })).state; } catch { access = 'prompt'; }
+      if (access === 'granted' || (access === 'prompt' && ask)) {
+        try {
+          details = await window.getScreenDetails();
+          access = 'granted';
+          details.addEventListener('screenschange', () => { pickTarget(); renderStart(); });
+          details.addEventListener('currentscreenchange', () => { startNote = ''; renderStart(); });
+        } catch { access = 'denied'; }
+      }
+    }
+    if (details) pickTarget();
+    renderStart();
+  }
+  function openStart(note = '') {
+    startNote = note;
+    closeOverlays(); body.classList.add('show-start');
+    renderStart(); loadDisplays(false);
+  }
+  const closeStart = () => { startNote = ''; body.classList.remove('show-start'); };
+  async function fullscreenOn(screen) {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    await document.documentElement.requestFullscreen(screen ? { screen } : {});
+  }
+  // Presenter: this window stays put and becomes the presenter view; the slides open as a new
+  // window on the projector. The presenter view can therefore never leave the laptop.
+  // kept for this tab, so a refresh picks the running show back up
+  let pw = null, slidesFull = false, slidesOn = sessionStorage.getItem('ateno-slides-on') || '', firstPressUsed = false;
+  let slidesAlive = false, currentSlides = sessionStorage.getItem('ateno-slides-id') || '';
+  let autoFull = localStorage.getItem('ateno-autofull') !== '0';
+  const NEXT_KEYS = ['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'MediaTrackNext'];
+  async function startPresenter() {
+    const id = String(Date.now());
+    const url = `${location.pathname}?slides=${id}#${cur + 1}`;
+    const others = allScreens().filter(s => s !== target);
+    if (!target || !others.length) {
+      closeStart();
+      if (canPlace && access !== 'denied') return setPresenter(true);        // one display: switch in place
+      stopSlides(id);
+      pw = window.open(url, `slides${id}`, 'popup,width=1280,height=720');    // moved to the other display by hand
+      if (!pw) return openStart('The slides window was blocked. Allow pop-ups for this site, then try again.');
+      slidesOn = ''; rememberSlides(id);
+      return setPresenter(true);
+    }
+    if (target === details.currentScreen)
+      return openStart(`Move this window to ${screenName(others[0])} first, or choose it for the slides.`);
+    closeStart();
+    stopSlides(id);
+    pw = window.open(url, `slides${id}`, `popup,fullscreen,left=${target.availLeft},top=${target.availTop},width=${target.availWidth},height=${target.availHeight}`);
+    if (!pw) return openStart('The slides window was blocked. Allow pop-ups for this site, then try again.');
+    slidesOn = screenName(target); slidesFull = false; firstPressUsed = false;
+    rememberSlides(id);
+    window.focus();
+    setPresenter(true);
+  }
+  // closes any slides window, including one left over from before a page reload
+  function stopSlides(keep) {
+    chan?.postMessage({ type: 'end', keep });
+    pw?.close(); pw = null; slidesFull = false; slidesAlive = false;
+    if (!keep) { currentSlides = ''; slidesOn = ''; sessionStorage.removeItem('ateno-slides-id'); sessionStorage.removeItem('ateno-slides-on'); }
+  }
+  function rememberSlides(id) {
+    currentSlides = id;
+    sessionStorage.setItem('ateno-slides-id', id);
+    sessionStorage.setItem('ateno-slides-on', slidesOn);
+  }
+  const slidesOpen = () => (pw && !pw.closed) || slidesAlive;
+  async function resetDisplays() {
+    stopSlides();
+    setPresenter(false);
+    details = null; target = null;
+    await loadDisplays(false);
+    openStart();
+  }
+
+  // A new window cannot go full screen by itself. A click or key press here lends it permission.
+  function fullscreenSlides() {
+    if (slidesFull || !slidesOpen()) return;
+    if ((!pw || pw.closed) && currentSlides) { try { pw = window.open('', `slides${currentSlides}`); } catch { return; } }   // after a refresh
+    if (!pw) return;
+    try { pw.postMessage('fullscreen', { targetOrigin: location.origin, delegate: 'fullscreen' }); } catch {}
+  }
+  function updateBanner() {
+    const live = slidesOpen();
+    $('pfs').hidden = !(live && slidesOn && !slidesFull);
+    $('rehearse').textContent = !isPresenter || !live ? ''
+      : slidesOn ? `Slides on ${slidesOn}`
+      : 'Drag the slides onto the other display, click them and press F';
+  }
+
+  // Viewer | Presenter: the one control for changing mode
+  async function switchMode(to) {
+    if (to === (isPresenter ? 'presenter' : 'viewer')) return;
+    if (to === 'viewer') {
+      stopSlides();
+      return setPresenter(false);
+    }
+    if (canPlace && !details) await loadDisplays(false);
+    if (allScreens().length > 1) return startPresenter();
+    if (!canPlace || access === 'denied' || (window.screen.isExtended && !details)) return openStart();
+    setPresenter(true);
+  }
+  document.querySelectorAll('#seg button').forEach(b => { b.onclick = () => { switchMode(b.dataset.m); b.blur(); }; });
+  $('pfs').onclick = fullscreenSlides;
+  // With the setting on, the first key or clicker press fills the display and does not also change slide.
+  addEventListener('keydown', e => {
+    if (noteClicker(e)) return;
+    if (!autoFull || e.key === 'Escape' || !slidesOpen() || !slidesOn || slidesFull) return;
+    fullscreenSlides();
+    if (!firstPressUsed && NEXT_KEYS.includes(e.key)) { firstPressUsed = true; e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  addEventListener('pointerdown', () => { if (autoFull) fullscreenSlides(); }, true);
+  function setAutoFull(on) {
+    autoFull = on;
+    localStorage.setItem('ateno-autofull', on ? '1' : '0');
+    $('sfull').setAttribute('aria-checked', on);
+  }
+  $('sfull').onclick = () => setAutoFull(!autoFull);
+  setAutoFull(autoFull);
+  setInterval(() => { if (pw?.closed) { pw = null; slidesAlive = false; updateBanner(); } }, 700);
+
+  // the slides window
+  let reportSlides = null;
+  if (audience) {
+    const report = () => chan?.postMessage({ type: 'slides', id: slidesId, full: !!document.fullscreenElement, black: body.classList.contains('black') });
+    reportSlides = report;
+    addEventListener('pagehide', () => chan?.postMessage({ type: 'slides-gone', id: slidesId }));
+    addEventListener('message', e => {
+      if (e.origin === location.origin && e.data === 'fullscreen') document.documentElement.requestFullscreen().catch(() => {});
+    });
+    document.addEventListener('fullscreenchange', report);
+    const goFull = () => { if (localStorage.getItem('ateno-autofull') !== '0' && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); };
+    addEventListener('keydown', goFull); addEventListener('pointerdown', goFull);
+    report();
+  }
+
+  async function startSlides() {
+    closeStart();
+    stopSlides(); setPresenter(false);
+    try { await fullscreenOn(target); }
+    catch { openStart('Click Slides only again to continue.'); }
+  }
+  $('mpres').onclick = startPresenter;
+  $('mslides').onclick = startSlides;
+  $('mskip').onclick = closeStart;
+  $('mreset').onclick = resetDisplays;
+  $('pgear').onclick = () => openStart();
+  $('rowhelp').onclick = () => { body.classList.remove('show-start'); body.classList.add('show-help'); };
+  $('hclose').onclick = () => body.classList.remove('show-help');
+  $('help').addEventListener('click', e => { if (e.target === $('help')) body.classList.remove('show-help'); });
+  $('allow').onclick = () => loadDisplays(true);
+  $('start').addEventListener('click', e => { if (e.target === $('start')) closeStart(); });
+  window.screen.addEventListener?.('change', () => { if (body.classList.contains('show-start')) loadDisplays(false); });
+
+  // ---------- phone, tablet and watch remote ----------
+  // The site is static, so phone and computer talk through a public relay, on a private random channel.
+  // It connects only after the remote is switched on here, and carries only commands such as "next".
+  const RELAY = 'https://ntfy.sh/';
+  let room = localStorage.getItem('ateno-room'), relay = null, remoteSeen = false;
+  const heard = new Set();
+  const newRoom = () => 'ateno-' + [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
+  const say = m => fetch(`${RELAY}${room}?cache=no`, { method: 'POST', body: m }).catch(() => {});
+  const sayWhere = () => say(`at:${cur}:${body.classList.contains('black') ? 1 : 0}:${isPresenter ? 'p' : 'v'}`);
+  const remoteStatus = () => {};
+  function connectRemote() {
+    if (relay || audience) return;
+    relay = new EventSource(`${RELAY}${room}/sse`);
+    relay.onopen = () => { remoteStatus('Ready. Waiting for your phone or tablet.'); say('hi'); };   // open remotes answer with hello
+    relay.onerror = () => remoteStatus('Reconnecting to the relay…');
+    connectLaser();
+    relay.onmessage = e => {
+      let d; try { d = JSON.parse(e.data); } catch { return; }
+      if (d.event !== 'message' || heard.has(d.id)) return;
+      heard.add(d.id);
+      const [cmd, from, name] = String(d.message).split('~');
+      if (!['next', 'prev', 'first', 'black', 'hello', 'ping', 'bye'].includes(cmd)) return;
+      const id = from || 'watch';      // the watch Shortcuts send a bare command
+      if (cmd === 'bye') return dropDevice(id);
+      if (cmd === 'next') go(cur + 1, { fromRemote: true });
+      else if (cmd === 'prev') go(cur - 1, { fromRemote: true });
+      else if (cmd === 'first') go(0, { fromRemote: true });
+      else if (cmd === 'black') setBlack(!body.classList.contains('black'));
+      else if (cmd === 'hello') { remoteSeen = true; sayWhere(); }
+      seeDevice(id, name || (id === 'watch' ? 'Apple Watch' : ''), CMD_NAMES[cmd]);
+    };
+  }
+  // remotes connected through the relay, shown in the remote sheet, the toolbar and the presenter header
+  const devices = new Map();
+  const CMD_NAMES = { next: 'Next', prev: 'Back', first: 'First slide', black: 'Black screen' };
+  const QUIET = 200000;       // a phone pings every 90 s while its page is open
+  const CLICKER_ONLY = ['PageDown', 'PageUp', 'F5', 'MediaTrackNext', 'MediaTrackPrevious'];
+  const ago = t => { const s = Math.round((Date.now() - t) / 1000); return s < 3 ? 'just now' : s < 60 ? `${s}s ago` : `${Math.floor(s / 60)}m ago`; };
+  const isQuiet = (id, d) => id !== 'watch' && Date.now() - d.seen > QUIET;
+  const statusItem = (id, d) => {
+    const s = document.createElement('span');
+    s.className = 'st' + (isQuiet(id, d) ? '' : ' on') + (d.fresh ? ' ping' : '');
+    s.append(document.createElement('i'), d.name);
+    return s;
+  };
+  function renderDevices() {
+    const list = [...devices];
+    const here = list.map(([id, d]) => {
+      const s = statusItem(id, d);
+      s.lastChild.textContent = `${d.name} ${isQuiet(id, d) ? 'not responding' : 'connected'}`;
+      return s;
+    });
+    if (!here.length) { const s = document.createElement('span'); s.className = 'st'; s.append(document.createElement('i'), 'Phone not connected'); here.push(s); }
+    $('pdevs').replaceChildren(...here);
+    $('rdevs').replaceChildren(...list.map(([id, d]) => {
+      const row = document.createElement('div'); row.className = 'rowi';
+      const name = document.createElement('span'); name.textContent = d.name;
+      const what = document.createElement('span');
+      what.className = 'val' + (isQuiet(id, d) ? '' : ' ok');
+      what.textContent = isQuiet(id, d) ? 'Not responding' : d.action ? `${d.action} · ${ago(d.seen)}` : 'Connected';
+      row.append(name, what);
+      return row;
+    }));
+    const phones = list.filter(([id]) => id !== 'watch');
+    $('rtitle').textContent = phones.length ? `${phones[0][1].name} connected` : 'Scan to connect';
+    $('rhint').textContent = phones.length ? 'Press Next to try it.' : 'Use your phone or tablet camera.';
+    const names = list.map(([, d]) => d.name).join(', ');
+    $('remval').textContent = names || (localStorage.getItem('ateno-remote-on') ? 'Waiting' : 'Off');
+    $('remval').classList.toggle('ok', !!names);
+    list.forEach(([, d]) => { d.fresh = false; });
+    renderClicker();
+  }
+  // A clicker is plugged into the computer, so it has its own indicator, apart from the remotes.
+  // Three ways to recognise one: USB identity (WebHID), keys only clickers send, and how brief a press is.
+  let clickerAt = +sessionStorage.getItem('ateno-clicker-at') || 0, clickerFresh = false, hidDev = null, pairing = false, pairT;
+  const clickerName = () => hidDev?.productName || 'Clicker';
+  function renderClicker() {
+    const on = !!clickerAt || !!hidDev;
+    $('clkstate').textContent = pairing ? 'Press forward on the clicker' : hidDev ? clickerName() : on ? 'Detected' : 'Not detected';
+    $('clkstate').classList.toggle('ok', on && !pairing);
+    $('clkfind').hidden = on && !pairing;
+    $('pclk').className = (on ? 'on' : '') + (clickerFresh ? ' ping' : '');
+    $('pclk').replaceChildren(document.createElement('i'), on ? `${clickerName()} connected` : 'Clicker not detected');
+    const st = [...devices].map(([id, d]) => statusItem(id, d));
+    if (on) { const c = document.createElement('span'); c.className = 'st on' + (clickerFresh ? ' ping' : ''); c.append(document.createElement('i'), clickerName()); st.unshift(c); }
+    $('bstat').replaceChildren(...st);
+    clickerFresh = false;
+  }
+  function seeClicker() {
+    if (!clickerAt && !hidDev) flash('Clicker detected');
+    clickerAt = Date.now(); clickerFresh = true;
+    sessionStorage.setItem('ateno-clicker-at', clickerAt);
+    renderClicker();
+  }
+  const reportClicker = () => { if (audience) chan?.postMessage({ type: 'clicker' }); else seeClicker(); };
+  const hidKey = d => `${d.vendorId}:${d.productId}`;
+  async function loadHID() {
+    if (!navigator.hid || audience) return;
+    const saved = localStorage.getItem('ateno-clicker-hid');
+    const known = await navigator.hid.getDevices().catch(() => []);
+    hidDev = known.find(d => hidKey(d) === saved) || null;
+    renderClicker();
+    navigator.hid.addEventListener('connect', e => {
+      if (hidKey(e.device) !== localStorage.getItem('ateno-clicker-hid')) return;
+      hidDev = e.device; clickerFresh = true; flash(`${clickerName()} connected`); renderClicker();
+    });
+    navigator.hid.addEventListener('disconnect', e => {
+      if (!hidDev || hidKey(e.device) !== hidKey(hidDev)) return;
+      const n = clickerName(); hidDev = null; clickerAt = 0; sessionStorage.removeItem('ateno-clicker-at'); flash(`${n} disconnected`); renderClicker();
+    });
+  }
+  async function detectClicker() {
+    if (navigator.hid) {
+      startNote = 'Choose your clicker in the list. If it is not there, press Cancel.'; renderStart();
+      try {
+        const [d] = await navigator.hid.requestDevice({ filters: [] });
+        startNote = ''; renderStart();
+        if (d) { hidDev = d; localStorage.setItem('ateno-clicker-hid', hidKey(d)); clickerFresh = true; flash(`${clickerName()} connected`); return renderClicker(); }
+      } catch { startNote = ''; renderStart(); }
+    }
+    pairing = true; renderClicker();
+    clearTimeout(pairT); pairT = setTimeout(() => { pairing = false; renderClicker(); }, 15000);
+  }
+
+  function seeDevice(id, name, action) {
+    const known = devices.has(id);
+    if (!known && devices.size >= 8) return;
+    const d = devices.get(id) || {};
+    Object.assign(d, { name: String(name || d.name || 'Remote').slice(0, 24), seen: Date.now(), fresh: !!action || !known });
+    if (action) d.action = action;
+    devices.set(id, d);
+    if (!known) {
+      flash(`${d.name} connected`);
+      if (body.classList.contains('show-remote')) {
+        $('rok').classList.remove('on'); $('rok').offsetWidth; $('rok').classList.add('on');
+      }
+    }
+    renderDevices();
+  }
+  function dropDevice(id) {
+    const d = devices.get(id);
+    if (!d) return;
+    devices.delete(id);
+    flash(`${d.name} disconnected`);
+    if (![...devices.keys()].some(k => k !== 'watch')) remoteSeen = false;
+    renderDevices();
+  }
+  // Clickers that send arrow keys look like a keyboard, except that their presses last a few milliseconds.
+  const SHARED_KEYS = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', ' ', 'Enter', 'Tab', 'Backspace'];
+  const BRIEF_MS = 40;
+  const learned = new Set(JSON.parse(localStorage.getItem('ateno-clicker-keys') || '[]'));
+  const pressedAt = {};
+  function noteClicker(e) {
+    if (e.repeat) return false;
+    const k = e.key;
+    if (pairing && (SHARED_KEYS.includes(k) || CLICKER_ONLY.includes(k) || k === '.' || k === 'b')) {
+      pairing = false; clearTimeout(pairT);
+      learned.add(k); localStorage.setItem('ateno-clicker-keys', JSON.stringify([...learned]));
+      seeClicker();
+      e.preventDefault(); e.stopImmediatePropagation();     // a test press does not change slide
+      return true;
+    }
+    pressedAt[k] = performance.now();
+    if (CLICKER_ONLY.includes(k) || learned.has(k)) reportClicker();
+    return false;
+  }
+  addEventListener('keyup', e => {
+    const t = pressedAt[e.key]; delete pressedAt[e.key];
+    if (t !== undefined && SHARED_KEYS.includes(e.key) && performance.now() - t <= BRIEF_MS) reportClicker();
+  }, true);
+  setInterval(renderDevices, 5000);
+
+  // ---------- laser pointer, drawn from the phone ----------
+  const dotEl = document.createElement('div'); dotEl.id = 'laser'; deck.append(dotEl);
+  let laser = null, dotX = 0, dotY = 0, aimX = 0, aimY = 0, dotShown = false, dotLoop = 0, dotT;
+  function dotFrame() {
+    dotX += (aimX - dotX) * .3; dotY += (aimY - dotY) * .3;
+    dotEl.style.transform = `translate(${dotX * 1920}px,${dotY * 1080}px)`;
+    dotLoop = dotShown ? requestAnimationFrame(dotFrame) : 0;
+  }
+  function showLaser(s) {
+    clearTimeout(dotT);
+    const off = () => { dotShown = false; dotEl.classList.remove('on'); };
+    if (s === 'off') return off();
+    const [x, y] = String(s).split(',').map(Number);
+    if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) return;
+    if (!dotShown) { dotX = x; dotY = y; }
+    aimX = x; aimY = y; dotShown = true;
+    dotEl.classList.add('on');
+    dotT = setTimeout(off, 1600);          // in case the final message is lost
+    if (!dotLoop) dotLoop = requestAnimationFrame(dotFrame);
+  }
+  const onLaser = s => { showLaser(s); chan?.postMessage({ type: 'laser', s }); };
+  function connectLaser() {
+    if (laser || audience) return;
+    const start = () => { if (relay && !laser) laser = window.laserListen(`${room}/laser`, onLaser); };
+    if (window.laserListen) return start();
+    const s = document.createElement('script'); s.src = 'assets/laser-link.js'; s.onload = start; document.head.append(s);
+  }
+  const stopLaser = () => { laser?.close(); laser = null; };
+
+  let flashT;
+  function flash(text) {
+    $('jump').textContent = text; $('jump').classList.add('on');
+    clearTimeout(flashT); flashT = setTimeout(() => $('jump').classList.remove('on'), 2500);
+  }
+  function loadQR() {
+    return window.qrcode ? Promise.resolve() : new Promise((ok, no) => {
+      const s = document.createElement('script'); s.src = 'assets/qrcode.js'; s.onload = ok; s.onerror = no; document.head.append(s);
+    });
+  }
+  async function drawQR() {
+    const url = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}remote.html#${room}`;
+    $('rlink').href = url;
+    try {
+      await loadQR();
+      const q = window.qrcode(0, 'M'); q.addData(url); q.make();
+      $('rqr').innerHTML = q.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
+    } catch { $('rqr').textContent = 'QR code unavailable'; }
+  }
+  function openRemote() {
+    closeOverlays(); body.classList.remove('show-start');
+    if (!room) { room = newRoom(); localStorage.setItem('ateno-room', room); }
+    localStorage.setItem('ateno-remote-on', '1');
+    body.classList.add('show-remote');
+    connectRemote(); drawQR(); renderDevices();
+  }
+  $('rowremote').onclick = openRemote;
+  $('clkfind').onclick = detectClicker;
+  $('pdevs').onclick = openRemote;
+  $('pclk').onclick = () => openStart();
+  loadHID();
+  $('rclose').onclick = () => body.classList.remove('show-remote');
+  $('remote').addEventListener('click', e => { if (e.target === $('remote')) body.classList.remove('show-remote'); });
+  $('roff').onclick = () => { stopLaser(); relay?.close(); relay = null; remoteSeen = false; devices.clear(); renderDevices(); localStorage.removeItem('ateno-remote-on'); body.classList.remove('show-remote'); };
+  $('rnew').onclick = () => {
+    stopLaser(); relay?.close(); relay = null; remoteSeen = false;
+    devices.clear(); renderDevices();
+    room = newRoom(); localStorage.setItem('ateno-room', room);
+    connectRemote(); drawQR();
+  };
+
+  // typing a number then Return jumps to that slide
+  const CLICKER_KEYS = ['PageDown', 'PageUp', 'MediaTrackNext', 'MediaTrackPrevious', 'F5', '.'];
+  let typed = '', typedT;
+  const showTyped = () => {
+    $('jump').innerHTML = `<i>Go to slide</i>${typed}`;
+    $('jump').classList.toggle('on', !!typed);
+    clearTimeout(typedT);
+    typedT = setTimeout(() => { typed = ''; $('jump').classList.remove('on'); }, 2500);
+  };
+
+  addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (audience && /^[pdngrPDNGR?]$/.test(k)) return;      // the slides window only moves slides
+    if (body.classList.contains('show-start')) {
+      e.preventDefault();
+      if (e.repeat) return;
+      if (k === 'Enter' || k === 'F5') { if (!$('allow').hidden) $('allow').click(); else if (!e.target.closest?.('#start button')) startPresenter(); else e.target.click(); }
+      else if (k === ' ' && e.target.closest?.('#start button')) e.target.click();
+      else if (k === 'Tab') { e.preventDefault(); const f = [...$('start').querySelectorAll('button:not([hidden])')].filter(b => b.offsetParent); f[(f.indexOf(document.activeElement) + (e.shiftKey ? -1 : 1) + f.length) % f.length]?.focus(); }
+      else if (!['Shift', 'Meta', 'Control', 'Alt'].includes(k)) closeStart();
+      return;
+    }
+    // clickers: a held button repeats its key, which must not race through the deck
+    if (e.repeat && CLICKER_KEYS.includes(k)) { e.preventDefault(); return; }
+    // clicker "start" button (F5 or Shift+F5): full screen rather than reloading the page
+    if (k === 'F5') { e.preventDefault(); if (fullOK && !document.fullscreenElement) actions.bfull(); return; }
+    if (body.classList.contains('show-grid')) {
+      const map = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns(), ArrowUp: -columns(), PageDown: 1, PageUp: -1, MediaTrackNext: 1, MediaTrackPrevious: -1 };
+      if (k in map) { e.preventDefault(); setSel(sel + map[k]); return; }
+      if (k === 'Enter' || k === ' ') { e.preventDefault(); openTile(sel); return; }
+    }
+    if (/^[0-9]$/.test(k)) { typed = (typed + k).slice(0, 3); showTyped(); return; }
+    if (k === 'Enter' && typed) {
+      e.preventDefault(); const n = parseInt(typed, 10); typed = ''; showTyped();
+      if (n >= 1) go(n - 1);
+      return;
+    }
+    if (body.classList.contains('black') && k !== 'f' && k !== 'F') { e.preventDefault(); setBlack(false); return; }
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'MediaTrackNext'].includes(k)) { e.preventDefault(); step(1); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'MediaTrackPrevious'].includes(k)) { e.preventDefault(); step(-1); }
+    else if (k === 'Home') go(0);
+    else if (k === 'End') go(N - 1);
+    else if (k === 'f' || k === 'F') actions.bfull();
+    else if (k === 'g' || k === 'G') toggleGrid();
+    else if (k === 'n' || k === 'N') { if (!isPresenter) toggle('show-notes'); }
+    else if (k === 'p' || k === 'P') switchMode(isPresenter ? 'viewer' : 'presenter');
+    else if (k === 'd' || k === 'D') openStart();
+    else if (k === 'r' || k === 'R') openRemote();
+    else if (k === 'b' || k === 'B' || k === '.') setBlack(true);
+    else if (k === '?') toggle('show-help');
+    else if (k === 'Escape') { closeOverlays(); body.classList.remove('show-remote'); }
+  });
+
+  // click the right of a slide to advance, the left third to go back
+  $('stage').addEventListener('click', e => {
+    const link = e.target.closest('a');
+    if (link) {                                    // slide links: sources open in a new tab, data-go jumps inside the deck
+      if (link.dataset.go) { e.preventDefault(); go(slides.findIndex(s => s.id === link.dataset.go)); }
+      return;
+    }
+    const r = $('stage').getBoundingClientRect();
+    step(e.clientX < r.left + r.width * 0.3 ? -1 : 1);
+  });
+  $('black').addEventListener('click', () => setBlack(false));
+
+  let tx = null;
+  addEventListener('touchstart', e => { tx = e.touches[0].clientX; wake(); }, { passive: true });
+  addEventListener('touchend', e => {
+    if (tx === null || body.classList.contains('show-grid')) return;
+    const dx = e.changedTouches[0].clientX - tx; tx = null;
+    if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+  });
+
+  // hide controls and the cursor when idle
+  let idle;
+  const sleep = () => {
+    if (isPresenter || $('bar').matches(':hover') || scrubbing) return wake();
+    body.classList.add('idle');
+  };
+  function wake() { body.classList.remove('idle'); clearTimeout(idle); idle = setTimeout(sleep, 2800); }
+  addEventListener('mousemove', wake); wake();
+
+  // keep the main and presenter windows in step
+  if (chan) chan.onmessage = e => {
+    if (e.data?.type === 'go') go(e.data.n, { remote: true });
+    if (e.data?.type === 'black') setBlack(e.data.on, true);
+    if (e.data?.type === 'end' && audience && e.data.keep !== slidesId) window.close();
+    if (e.data?.type === 'clicker' && !audience) seeClicker();
+    if (e.data?.type === 'laser') showLaser(e.data.s);
+    if (e.data?.type === 'who' && audience) reportSlides?.();
+    if (e.data?.type === 'slides-gone' && !audience && e.data.id === currentSlides) { slidesAlive = false; slidesFull = false; updateBanner(); }
+    if (e.data?.type === 'slides' && !audience) {
+      slidesAlive = true; slidesFull = e.data.full;
+      if (!currentSlides) currentSlides = e.data.id;
+      if (e.data.black) setBlack(true, true);
+      updateBanner();
+      if (!slidesFull && autoFull) fullscreenSlides();   // works while the click that opened the window still counts
+    }
+  };
+
+  // presenter header: elapsed time, wall clock, notes size
+  let clockOn = false;
+  function startClock() {
+    if (clockOn) return; clockOn = true;
+    const saved = JSON.parse(sessionStorage.getItem('ateno-timer') || 'null');
+    let base = saved?.base ?? Date.now(), held = saved?.held ?? null, size = +localStorage.getItem('ateno-notes') || 22;
+    const keep = () => {
+      sessionStorage.setItem('ateno-timer', JSON.stringify({ base, held }));
+      $('tpause').textContent = held === null ? 'Pause' : 'Resume';
+      $('timer').classList.toggle('paused', held !== null);
+    };
+    document.documentElement.style.setProperty('--notes', size + 'px');
+    const pad = v => String(v).padStart(2, '0');
+    const tick = () => {
+      const s = Math.floor(((held ?? Date.now()) - base) / 1000);
+      $('timer').textContent = `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+      $('clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+    setInterval(tick, 500); tick(); keep();
+    $('tpause').onclick = () => {
+      if (held === null) held = Date.now(); else { base += Date.now() - held; held = null; }
+      keep();
+    };
+    $('treset').onclick = () => { base = Date.now(); if (held !== null) held = base; keep(); tick(); };
+    const font = d => {
+      size = Math.max(16, Math.min(40, size + d));
+      localStorage.setItem('ateno-notes', size);
+      document.documentElement.style.setProperty('--notes', size + 'px');
+    };
+    $('timer').onclick = () => $('tpause').onclick();
+    $('tsmall').onclick = () => font(-2);
+    $('tlarge').onclick = () => font(2);
+  }
+  const baseTitle = document.title;
+  function setPresenter(on) {
+    isPresenter = on;
+    if (!audience) localStorage.setItem('ateno-mode', on ? 'presenter' : 'viewer');
+    body.classList.toggle('presenter', on);
+    document.title = on ? 'Presenter · ' + baseTitle : baseTitle;
+    document.querySelectorAll('#seg button').forEach(b => {
+      const active = (b.dataset.m === 'presenter') === on;
+      b.classList.toggle('on', active); b.setAttribute('aria-pressed', active);
+    });
+    updateBanner();
+    if (remoteSeen) { clearTimeout(atTimer); atTimer = setTimeout(sayWhere, 400); }
+    if (on) { startClock(); renderNext(); playBuilds(slides[cur]); }
+    fit(); wake();
+  }
+
+  // print: load embeds and show every slide
+  addEventListener('beforeprint', () => slides.forEach(s => s.querySelectorAll('iframe[data-src]').forEach(f => { if (!f.src) f.src = f.dataset.src; })));
+
+  addEventListener('hashchange', () => go((parseInt(location.hash.slice(1), 10) || 1) - 1, { fromHash: true }));
+  const firstVisit = !location.hash && !audience && matchMedia('(hover:hover)').matches && window.screen.isExtended;
+  fit();
+  go((parseInt(location.hash.slice(1), 10) || 1) - 1, { fromHash: true, instant: true });
+  body.classList.toggle('audience', audience);
+  const resume = !audience && localStorage.getItem('ateno-mode') === 'presenter' && innerWidth > 720;
+  if (!audience && room && localStorage.getItem('ateno-remote-on')) connectRemote();
+  setPresenter(resume);
+  if (resume) chan?.postMessage({ type: 'who' });      // is a slides window still open from before the refresh?
+  fit();
+  renderDevices();
+  if (firstVisit && !resume) openStart();
+  const ready = () => body.classList.add('ready');
+  (document.fonts?.ready || Promise.resolve()).then(ready); setTimeout(ready, 1200);
+})();
+</script>
+</body>
+</html>

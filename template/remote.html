@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Remote · Ateno Pitch Deck</title>
+<meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--ink:#f5f5f7;--ink2:rgba(235,235,245,.62);--ink3:rgba(235,235,245,.36)}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+body{display:flex;flex-direction:column;gap:14px;padding:calc(12px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom));touch-action:manipulation;-webkit-user-select:none;user-select:none}
+header{display:flex;align-items:center;gap:8px;font-size:13px;min-height:22px}
+#dot{width:6px;height:6px;border-radius:50%;background:#ff9f0a;flex:none;transition:background .3s}
+#dot.ok{background:#30d158}#dot.bad{background:#ff453a}
+#dot.sent{animation:sent .5s ease}
+@keyframes sent{0%{transform:scale(1)}40%{transform:scale(2.2)}100%{transform:scale(1)}}
+#status{flex:1;min-width:0;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#count{font-variant-numeric:tabular-nums;color:var(--ink2)}
+#count i{font-style:normal;color:var(--ink3)}
+main{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px}
+#thumb{position:relative;width:100%;aspect-ratio:16/9;flex:none;border-radius:10px;background:#fff center/cover no-repeat;touch-action:none;overflow:hidden}
+#ldot{position:absolute;left:-12px;top:-12px;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle,#fff 0,#ff3b30 26%,rgba(255,59,48,.7) 42%,rgba(255,59,48,0) 72%);opacity:0;pointer-events:none}
+#ldot.on{opacity:1}
+#lhint{flex:none;margin-top:-8px;font-size:12px;color:var(--ink3);text-align:center}
+#lhint:empty{display:none}
+#notes{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;font-size:17px;line-height:1.42;letter-spacing:-.01em;color:var(--ink);-webkit-user-select:text;user-select:text}
+#notes h1{display:none}
+nav{display:grid;grid-template-columns:1fr 2.2fr;gap:8px;flex:none}
+button{all:unset;box-sizing:border-box;display:grid;place-items:center;cursor:pointer;transition:transform .16s,opacity .2s,background .16s}
+nav button{height:96px;border-radius:16px;font-size:17px;font-weight:600}
+nav button:active{transform:scale(.98)}
+#next{background:#f5f5f7;color:#000}
+#next:active{background:#fff}
+#prev{background:#1c1c1e;color:var(--ink)}
+button:disabled{opacity:.3}
+#tools{display:flex;justify-content:space-between;flex:none;padding:0 4px}
+#tools button{height:30px;font-size:13px;color:var(--ink2)}
+#black.on{color:#fff;font-weight:600}
+#joined{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#000;opacity:0;pointer-events:none}
+#joined svg{width:72px;height:72px;fill:#30d158}
+#joined path{fill:none;stroke:#fff;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40}
+#joined b{font-size:19px;font-weight:600;letter-spacing:-.01em}
+#joined.on{animation:jfade 1.7s ease both}
+#joined.on svg{animation:jpop .5s cubic-bezier(.34,1.4,.64,1) both}
+#joined.on path{animation:jdraw .36s .2s ease forwards}
+@keyframes jfade{0%{opacity:0}8%,75%{opacity:1}100%{opacity:0}}
+@keyframes jpop{from{transform:scale(.5)}to{transform:none}}
+@keyframes jdraw{to{stroke-dashoffset:0}}
+#sheet{position:fixed;inset:0;z-index:5;background:#000;padding:calc(16px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));overflow:auto;display:none;font-size:15px;line-height:1.42;-webkit-user-select:text;user-select:text}
+#sheet.on{display:block}
+#sheet header{justify-content:space-between;margin-bottom:18px}
+#sheet h2{margin:0;font-size:17px;font-weight:600}
+#sheet button{display:inline-grid;color:#0a84ff;font-size:15px}
+#sheet p{color:var(--ink2);margin:0 0 16px;font-size:14px}
+#sheet ol{padding-left:20px;margin:0 0 16px}
+#sheet li{margin-bottom:12px}
+#sheet code{display:block;margin:7px 0 6px;padding:9px 11px;border-radius:9px;background:#1c1c1e;font:12px ui-monospace,Menlo,monospace;word-break:break-all}
+@media (min-width:760px) and (min-height:500px),(orientation:landscape){
+  body{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;gap:14px 24px;padding-left:calc(20px + env(safe-area-inset-left));padding-right:calc(20px + env(safe-area-inset-right))}
+  header{grid-column:1/-1}
+  main{display:contents}
+  #thumb{grid-column:1;grid-row:2;align-self:start;max-height:100%}
+  #lhint{display:none}
+  #notes{grid-column:2;grid-row:2/5}
+  nav{grid-column:1;grid-row:3}
+  #tools{grid-column:1;grid-row:4}
+}
+@media (orientation:landscape) and (max-height:500px){nav button{height:60px}#notes{font-size:15px}}
+</style>
+</head>
+<body>
+<header><span id="dot"></span><span id="status">Connecting…</span><span id="count"></span></header>
+<main>
+  <div id="thumb" role="img" aria-label="Current slide. Drag to point with the laser"><i id="ldot"></i></div>
+  <div id="lhint">Drag on the slide to point</div>
+  <div id="notes"></div>
+</main>
+<nav>
+  <button id="prev" aria-label="Previous slide">Back</button>
+  <button id="next">Next</button>
+</nav>
+<div id="tools">
+  <button id="black">Black</button>
+  <button id="first">First</button>
+  <button id="watch">Watch</button>
+</div>
+
+<div id="joined"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="m15 27 8 8 15-17"/></svg><b>Connected</b></div>
+
+<div id="sheet" role="dialog" aria-label="Apple Watch setup">
+  <header><h2>Apple Watch</h2><button id="close">Done</button></header>
+  <p>The watch uses two Shortcuts on your iPhone. You only set this up once.</p>
+  <ol>
+    <li>Open <b>Shortcuts</b> on your iPhone and tap <b>+</b>.</li>
+    <li>Add the action <b>Get Contents of URL</b> and paste this address:
+      <code id="unext"></code><button id="cnext">Copy</button></li>
+    <li>Name it <b>Next slide</b>. In its details, turn on <b>Show on Apple Watch</b>.</li>
+    <li>Make a second shortcut called <b>Back</b> with this address:
+      <code id="uprev"></code><button id="cprev">Copy</button></li>
+    <li>On the watch, open <b>Shortcuts</b>, or add it to your watch face for one-tap access.</li>
+  </ol>
+  <p>Each tap takes a second or two. “New code” on the computer means setting these up again.</p>
+</div>
+
+<script src="assets/laser-link.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const room = location.hash.slice(1);
+  const RELAY = 'https://ntfy.sh/';
+  const me = Math.random().toString(36).slice(2, 7);
+  const ua = navigator.userAgent;
+  const myName = /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'iPad'
+    : /iPhone/.test(ua) ? 'iPhone' : /Android/.test(ua) ? (/Mobile/.test(ua) ? 'Android phone' : 'Android tablet') : 'Browser remote';
+  let slides = [], n = 0, black = false, live = false, seen = new Set(), wait;
+
+  const status = (text, cls = '') => { $('status').textContent = text; $('dot').className = cls; };
+  if (!/^ateno-[0-9a-f]{32}$/.test(room)) { status('Scan the QR code on your computer', 'bad'); return; }
+
+  function show() {
+    const s = slides[n];
+    $('count').innerHTML = slides.length ? `${n + 1} <i>/ ${slides.length}</i>` : '';
+    $('prev').disabled = n <= 0;
+    $('next').disabled = slides.length && n >= slides.length - 1;
+    $('black').classList.toggle('on', black);
+    if (!s) return;
+    $('thumb').style.backgroundImage = `url(thumbs/${s.id}.jpg)`;
+    const notes = $('notes'); notes.textContent = '';
+    const h = document.createElement('h1'); h.textContent = s.title;
+    notes.append(h, s.notes);
+    notes.scrollTop = 0;
+    if (slides[n + 1]) new Image().src = `thumbs/${slides[n + 1].id}.jpg`;
+  }
+  const clamp = v => Math.max(0, Math.min(Math.max(slides.length, 1) - 1, v));
+
+  function send(m) {
+    fetch(`${RELAY}${room}?cache=no`, { method: 'POST', body: `${m}~${me}` })
+      .then(r => { if (r.status === 429) status('Limit reached. Use your keyboard', 'bad'); })
+      .catch(() => status('No connection', 'bad'));
+  }
+  function press(cmd, change) {
+    navigator.vibrate?.(12);
+    change(); show(); send(cmd);
+  }
+  $('next').onclick = () => press('next', () => { n = clamp(n + 1); });
+  $('prev').onclick = () => press('prev', () => { n = clamp(n - 1); });
+  $('first').onclick = () => press('first', () => { n = 0; });
+  $('black').onclick = () => press('black', () => { black = !black; });
+
+  function hello() {
+    fetch(`${RELAY}${room}?cache=no`, { method: 'POST', body: `hello~${me}~${myName}` }).catch(() => status('No connection', 'bad'));
+    clearTimeout(wait);
+    wait = setTimeout(() => { if (!live) status('Open the talk on your computer', 'bad'); }, 7000);
+  }
+  function connect() {
+    const es = new EventSource(`${RELAY}${room}/sse`);
+    es.onopen = hello;
+    es.onerror = () => { live = false; status('Reconnecting…'); };
+    es.onmessage = e => {
+      let d; try { d = JSON.parse(e.data); } catch { return; }
+      if (d.event !== 'message' || seen.has(d.id)) return;
+      seen.add(d.id);
+      const [cmd, from] = String(d.message).split('~');
+      if (cmd.startsWith('at:')) {
+        const [, i, b, mode] = cmd.split(':');
+        n = clamp(+i); black = b === '1';
+        if (!live) celebrate();
+        live = true;
+        status(mode === 'p' ? 'Connected · Presenter' : 'Connected', 'ok'); show();
+      } else if (cmd === 'hi') {
+        hello();                                          // the computer just came back
+      } else if (from === me) {
+        $('dot').classList.remove('sent'); $('dot').offsetWidth; $('dot').classList.add('sent');   // the relay has the tap
+      } else {
+        if (cmd === 'next') n = clamp(n + 1);
+        else if (cmd === 'prev') n = clamp(n - 1);
+        else if (cmd === 'first') n = 0;
+        else if (cmd === 'black') black = !black;
+        show();
+      }
+    };
+  }
+
+  function celebrate() {
+    navigator.vibrate?.([15, 40, 15]);
+    $('joined').classList.remove('on'); $('joined').offsetWidth; $('joined').classList.add('on');
+  }
+  // tells the computer this page is still here, and that it has left
+  setInterval(() => { if (!document.hidden && live) send('ping'); }, 90000);
+  addEventListener('pagehide', () => { navigator.sendBeacon?.(`${RELAY}${room}?cache=no`, `bye~${me}`); });
+
+  // laser: the finger on the slide preview is the dot on the slide
+  const pad = $('thumb'), ldot = $('ldot');
+  let sender = null, linkUp = false, aim = null, sendT = 0, lastSent = 0;
+  const openLink = () => {
+    if (sender) return;
+    sender = window.laserSend?.(`${room}/laser`, up => {
+      linkUp = up;
+      if (!localStorage.getItem('ateno-laser-used') || !up) $('lhint').textContent = up ? 'Drag on the slide to point' : 'Laser unavailable on this network';
+    }) || null;
+  };
+  function aimAt(e) {
+    const r = pad.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+    aim = `${x.toFixed(3)},${y.toFixed(3)}`;
+    ldot.style.transform = `translate(${x * r.width}px,${y * r.height}px)`;
+  }
+  // 12 updates a second is what the free relay carries without dropping any
+  const pump = () => {
+    if (aim === null) return;
+    sender?.send(aim); sendT = setTimeout(pump, 80);
+  };
+  pad.addEventListener('pointerdown', e => {
+    openLink();
+    try { pad.setPointerCapture(e.pointerId); } catch {}
+    aimAt(e); ldot.classList.add('on');
+    navigator.vibrate?.(8);
+    localStorage.setItem('ateno-laser-used', '1');
+    if (linkUp) $('lhint').textContent = '';
+    clearTimeout(sendT); pump();
+  });
+  pad.addEventListener('pointermove', e => { if (aim !== null) aimAt(e); });
+  const lift = () => {
+    if (aim === null) return;
+    aim = null; clearTimeout(sendT); ldot.classList.remove('on');
+    sender?.send('off');
+  };
+  pad.addEventListener('pointerup', lift);
+  pad.addEventListener('pointercancel', lift);
+
+  // keep the screen awake while presenting
+  let lock;
+  const stayAwake = async () => { try { lock = await navigator.wakeLock?.request('screen'); } catch {} };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { stayAwake(); if (slides.length) hello(); } });
+  stayAwake();
+
+  // titles and notes come from the deck itself, so this page never goes out of date
+  fetch('index.html').then(r => r.text()).then(html => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    slides = [...doc.querySelectorAll('section.slide')].map(s => ({
+      id: s.id,
+      title: (s.querySelector('h1,h2')?.textContent || s.id).trim(),
+      notes: (s.querySelector('aside')?.textContent || 'No notes for this slide.').trim()
+    }));
+    show(); connect();
+  }).catch(() => status('Could not load the talk', 'bad'));
+
+  // Apple Watch setup
+  const url = m => `${RELAY}${room}/publish?message=${m}&cache=no`;
+  $('unext').textContent = url('next'); $('uprev').textContent = url('prev');
+  if (localStorage.getItem('ateno-laser-used')) $('lhint').textContent = '';
+  openLink();
+  $('watch').onclick = () => $('sheet').classList.add('on');
+  $('close').onclick = () => $('sheet').classList.remove('on');
+  const copy = (btn, text) => { btn.onclick = async () => { try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; } catch { btn.textContent = 'Select to copy'; } }; };
+  copy($('cnext'), url('next')); copy($('cprev'), url('prev'));
+})();
+</script>
+</body>
+</html>

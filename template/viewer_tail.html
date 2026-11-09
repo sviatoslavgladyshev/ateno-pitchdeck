@@ -1,0 +1,944 @@
+
+</div></div>
+
+<div id="notes" class="glass"></div>
+<div id="grid" aria-label="All slides"><div id="gridin"></div></div>
+
+<header id="phead">
+  <button id="timer" title="Pause or resume">00:00</button>
+  <span id="clock"></span>
+  <div id="rehearse"></div>
+  <button id="pfs" hidden>Fill screen</button>
+  <div id="pstat">
+    <button id="pdevs" title="Phone remote"></button>
+    <button id="pclk" title="Clicker"></button>
+    <button id="pgear" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.500v2.200M12 18.300v2.200M3.500 12h2.200M18.300 12h2.200M6 6l1.550 1.550M16.450 16.450 18 18M6 18l1.550-1.550M16.450 7.550 18 6"/></svg></button>
+  </div>
+</header>
+<div id="pv">
+  <div class="lab" id="nextlab">Next</div>
+  <div id="nextwrap"></div>
+</div>
+<div id="pnotes"></div>
+
+<div id="start" class="scrim" role="dialog" aria-label="Settings">
+  <div class="sheet">
+    <div class="sheethead"><h2 id="starttitle">Settings</h2><button id="mskip" class="link">Done</button></div>
+    <p id="dstatus"></p>
+    <p class="grouplabel" id="picklabel">Show slides on</p>
+    <div class="group" id="picker"></div>
+    <div class="group">
+      <div class="rowi"><span>Fill the display</span><button id="sfull" role="switch" aria-checked="true" aria-label="Fill the display"></button></div>
+    </div>
+    <div class="group">
+      <button class="rowi" id="rowremote"><span>Phone remote</span><span class="val chev" id="remval">Off</span></button>
+      <div class="rowi" id="clkrow"><span>Clicker</span><span class="val" id="clkstate"></span><div class="mini"><button id="clkfind">Detect</button></div></div>
+    </div>
+    <div class="group" id="prow">
+      <div class="rowi"><span>Timer</span><div class="mini"><button id="tpause">Pause</button><button id="treset">Reset</button></div></div>
+      <div class="rowi"><span>Notes size</span><div class="mini"><button id="tsmall" aria-label="Smaller notes">−</button><button id="tlarge" aria-label="Larger notes">+</button></div></div>
+    </div>
+    <div class="group"><button class="rowi" id="rowhelp"><span>Keyboard shortcuts</span><span class="val chev"></span></button></div>
+    <button id="allow" class="btn primary" hidden>Find second display</button>
+    <div id="modes">
+      <button id="mslides" class="btn">Slides only</button>
+      <button id="mpres" class="btn primary">Start presenting</button>
+    </div>
+    <button id="mreset" class="link">Reset displays</button>
+  </div>
+</div>
+
+<div id="remote" class="scrim" role="dialog" aria-label="Phone remote">
+  <div class="sheet">
+    <div class="sheethead"><button id="rclose" class="link">Done</button></div>
+    <div id="rqrwrap"><div id="rqr"></div><div id="rok"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="m15 27 8 8 15-17"/></svg></div></div>
+    <h2 id="rtitle">Scan to connect</h2>
+    <p id="rhint"></p>
+    <p id="rstatus"></p>
+    <div id="rdevs" class="group"></div>
+    <a id="rlink" hidden></a>
+    <div id="rfoot"><button id="rnew">New code</button><button id="roff">Turn off</button></div>
+  </div>
+</div>
+
+<div id="help" class="scrim" role="dialog" aria-label="Keyboard shortcuts">
+  <div class="sheet">
+    <div class="sheethead"><h2>Keyboard shortcuts</h2><button id="hclose" class="link">Done</button></div>
+    <dl>
+      <dt>Next</dt><dd><kbd>→</kbd><kbd>Space</kbd></dd>
+      <dt>Previous</dt><dd><kbd>←</kbd></dd>
+      <dt>First or last slide</dt><dd><kbd>Home</kbd><kbd>End</kbd></dd>
+      <dt>Jump to a slide</dt><dd><kbd>12</kbd><kbd>Return</kbd></dd>
+      <dt>Viewer or Presenter</dt><dd><kbd>P</kbd></dd>
+      <dt>All slides</dt><dd><kbd>G</kbd></dd>
+      <dt>Settings</dt><dd><kbd>D</kbd></dd>
+      <dt>Phone remote</dt><dd><kbd>R</kbd></dd>
+      <dt>Speaker notes</dt><dd><kbd>N</kbd></dd>
+      <dt>Black screen</dt><dd><kbd>B</kbd></dd>
+      <dt>Full screen</dt><dd><kbd>F</kbd></dd>
+    </dl>
+  </div>
+</div>
+
+<div id="peek" class="glass"><img alt=""><div></div></div>
+<div id="jump" class="glass"></div>
+<div id="black"></div>
+
+<nav id="bar" class="glass" aria-label="Slide controls">
+  <div id="scrub" role="slider" aria-label="Slide position"></div>
+  <div id="row">
+    <button id="bprev" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M14.500 5.500 8 12l6.500 6.500"/></svg></button>
+    <span id="count"></span>
+    <button id="bnext" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9.500 5.500 16 12l-6.500 6.500"/></svg></button>
+    <div id="bstat"></div>
+    <div id="seg" role="group" aria-label="Mode">
+      <button data-m="viewer">Viewer</button>
+      <button data-m="presenter">Presenter</button>
+    </div>
+    <button id="bgrid" aria-label="All slides" title="All slides"><svg viewBox="0 0 24 24"><rect x="4" y="4.500" width="6.500" height="6.500" rx="1.600"/><rect x="13.500" y="4.500" width="6.500" height="6.500" rx="1.600"/><rect x="4" y="13.500" width="6.500" height="6.500" rx="1.600"/><rect x="13.500" y="13.500" width="6.500" height="6.500" rx="1.600"/></svg></button>
+    <button id="bpres" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.500v2.200M12 18.300v2.200M3.500 12h2.200M18.300 12h2.200M6 6l1.550 1.550M16.450 16.450 18 18M6 18l1.550-1.550M16.450 7.550 18 6"/></svg></button>
+    <button id="bfull" aria-label="Full screen" title="Full screen"><svg viewBox="0 0 24 24"><path d="M4.500 9V6.500a2 2 0 0 1 2-2H9M15 4.500h2.500a2 2 0 0 1 2 2V9M19.500 15v2.500a2 2 0 0 1-2 2H15M9 19.500H6.500a2 2 0 0 1-2-2V15"/></svg></button>
+  </div>
+</nav>
+
+<script>
+(() => {
+  const deck = document.getElementById('deck');
+  const slides = [...deck.querySelectorAll('section.slide')];
+  const N = slides.length;
+  const $ = id => document.getElementById(id);
+  const audience = new URLSearchParams(location.search).has('slides');   // the window shown on the projector
+  const slidesId = new URLSearchParams(location.search).get('slides');
+  let isPresenter = false;
+  const chan = 'BroadcastChannel' in window ? new BroadcastChannel('ateno-deck') : null;
+  const body = document.body;
+  let cur = -1, atTimer;
+
+  // check-circle icon used on result cards
+  document.querySelectorAll('x-icon').forEach(el => {
+    const s = el.getAttribute('style') || '';
+    el.outerHTML = `<svg viewBox="0 0 24 24" style="${s};flex:none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  });
+
+  // paint images only once decoded, so large figures never flash blank
+  deck.querySelectorAll('img').forEach(i => { i.decoding = 'sync'; });
+
+  const notesOf = s => (s.querySelector('aside')?.textContent || '').trim();
+  const thumb = i => `thumbs/${slides[i].id}.jpg`;
+  const titleOf = i => (slides[i].querySelector('h1,h2')?.textContent || slides[i].id).trim();
+
+  // chapters come from data-section on the first slide of each part
+  const chapters = [];
+  slides.forEach((s, i) => {
+    if (s.dataset.section || !chapters.length) chapters.push({ name: s.dataset.section || '', from: i, to: i });
+    chapters[chapters.length - 1].to = i;
+  });
+
+  // ---------- scale to window ----------
+  function fit() {
+    const st = $('stage').getBoundingClientRect();
+    const full = audience || !!document.fullscreenElement || (innerHeight >= screen.height - 1 && innerWidth >= screen.width - 1);
+    body.classList.toggle('full', full && !isPresenter);
+    const pad = isPresenter ? 16 : full ? 0 : innerWidth < 720 ? 6 : 24;
+    const k = Math.min((st.width - pad * 2) / 1920, (st.height - pad * 2) / 1080);
+    deck.style.transform = `translate(-50%,-50%) scale(${k})`;
+  }
+  addEventListener('resize', fit);
+  document.addEventListener('fullscreenchange', fit);
+
+  // ---------- build-in animations (step-by-step equations etc.) ----------
+  function resetBuilds(s) {
+    s.querySelectorAll('[data-build-in]').forEach(el => {
+      const [kind] = el.dataset.buildIn.split(/\s+/);
+      el.style.transition = 'none';
+      el.style.opacity = 0;
+      el.style.transform = kind === 'pop' ? 'scale(.85)' : kind === 'rise' ? 'translateY(28px)' : 'none';
+    });
+  }
+  // Delays are CSS, not timers: browsers throttle timers in background windows, which left content hidden.
+  // The presenter view always shows the whole slide at once.
+  function playBuilds(s) {
+    s.offsetWidth;
+    s.querySelectorAll('[data-build-in]').forEach(el => {
+      const order = parseInt(el.dataset.buildIn.split(/\s+/)[1] || '1', 10), d = 300 + order * 380;
+      el.style.transition = isPresenter ? 'none' : `opacity .5s ease ${d}ms, transform .65s cubic-bezier(.34,1.45,.64,1) ${d}ms`;
+      el.style.opacity = 1; el.style.transform = 'none';
+    });
+  }
+
+  // ---------- media: restart GIFs and live embeds on entry ----------
+  function countUp(s) {
+    s.querySelectorAll('[data-count]').forEach(el => {
+      const end = parseFloat(el.dataset.count), t0 = performance.now(), dur = 1400;
+      if (isPresenter) { el.textContent = end.toLocaleString('en-US'); return; }
+      const tick = t => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = Math.round(end * e).toLocaleString('en-US'); if (k < 1) requestAnimationFrame(tick); };
+      el.textContent = '0'; setTimeout(() => requestAnimationFrame(tick), 450);
+    });
+  }
+  function wakeMedia(s) {
+    deck.querySelectorAll('video').forEach(v => { if (!s.contains(v)) { try { v.pause(); } catch (e) {} } });
+    s.querySelectorAll('video').forEach(v => { try { v.currentTime = 0; const p = v.play(); if (p) p.catch(() => {}); } catch (e) {} });
+    countUp(s);
+    // a new fragment restarts a GIF while its last frame stays on screen; the presenter view leaves them running
+    if (!isPresenter) s.querySelectorAll('img[src*=".gif"]').forEach(img => { img.src = `${img.getAttribute('src').split('#')[0]}#${Date.now()}`; });
+    s.querySelectorAll('iframe[data-src]').forEach(f => { f.src = f.dataset.src; });
+  }
+
+  // ---------- navigation with transitions ----------
+  function go(n, opts = {}) {
+    n = Math.max(0, Math.min(N - 1, n));
+    if (n === cur) return;
+    const prev = cur >= 0 ? slides[cur] : null, next = slides[n];
+    const fwd = n > cur;
+    const kind = (fwd ? prev?.dataset.transition : next.dataset.transition) || 'fade';
+    const leap = Math.abs(n - cur) > 1;       // jumps from the grid or scrubber always cross-fade
+    resetBuilds(next);
+    if (prev && kind === 'push' && !opts.instant && !leap && !isPresenter) {
+      next.style.transition = 'none';
+      next.style.transform = `translateX(${fwd ? 100 : -100}%)`;
+      next.classList.add('active'); next.offsetWidth;
+      next.style.transition = ''; next.style.transform = 'translateX(0)';
+      prev.style.transform = `translateX(${fwd ? -100 : 100}%)`;
+    } else {
+      next.style.transform = '';
+      if (prev && kind === 'magic' && !leap && !isPresenter) {
+        prev.style.transition = 'opacity .3s, visibility 0s linear .3s';
+        next.style.transition = 'opacity .3s, visibility 0s';
+      }
+      next.classList.add('active');
+    }
+    if (prev) {
+      prev.classList.remove('active');
+      const p = prev, q = next;
+      setTimeout(() => { if (p !== slides[cur]) { p.style.transform = ''; p.style.transition = ''; } if (q === slides[cur]) q.style.transition = ''; }, 650);
+    }
+    cur = n;
+    wakeMedia(next); playBuilds(next);
+    $('count').innerHTML = `${n + 1} <i>/ ${N}</i>`;
+    $('bprev').disabled = n === 0;
+    $('bnext').disabled = n === N - 1;
+    chapters.forEach((c, i) => {
+      const done = Math.max(0, Math.min(c.to - c.from + 1, n - c.from + 1));
+      fills[i].style.width = `${(done / (c.to - c.from + 1)) * 100}%`;
+    });
+    $('scrub').setAttribute('aria-valuenow', n + 1);
+    $('notes').textContent = notesOf(next) || 'No notes for this slide.';
+    $('pnotes').textContent = notesOf(next);
+    renderNext();
+    tiles.forEach((a, i) => a.classList.toggle('cur', i === n));
+    if (!opts.fromHash) history.replaceState(null, '', `${location.search}#${n + 1}`);
+    if (chan && !opts.remote) chan.postMessage({ type: 'go', n });
+    if (remoteSeen && !opts.fromRemote) { clearTimeout(atTimer); atTimer = setTimeout(sayWhere, 400); }
+  }
+  const step = d => go(cur + d);
+
+  // the next-slide preview is the real slide, scaled down, so it is as sharp as the slide itself
+  function scaleNext() {
+    const c = $('nextwrap').firstElementChild;
+    if (c) c.style.transform = `scale(${$('nextwrap').clientWidth / 1920})`;
+  }
+  function renderNext() {
+    if (!isPresenter) return;
+    const wrap = $('nextwrap'), last = cur + 1 >= N;
+    wrap.textContent = last ? 'End of talk' : '';
+    wrap.classList.toggle('end', last);
+    $('nextlab').textContent = last ? 'Next' : `Next · ${cur + 2} of ${N}`;
+    if (last) return;
+    const c = slides[cur + 1].cloneNode(true);
+    c.removeAttribute('id'); c.setAttribute('aria-hidden', 'true');
+    c.querySelectorAll('[data-build-in]').forEach(el => { el.removeAttribute('data-build-in'); el.style.opacity = ''; el.style.transform = ''; el.style.transition = ''; });
+    c.querySelectorAll('iframe[data-src]').forEach(f => { f.src = f.dataset.src; });
+    wrap.append(c); scaleNext();
+  }
+  addEventListener('resize', scaleNext);
+
+  // ---------- chapter scrubber ----------
+  const scrub = $('scrub'), peek = $('peek');
+  scrub.setAttribute('aria-valuemin', 1); scrub.setAttribute('aria-valuemax', N);
+  scrub.innerHTML = chapters.map(c => `<div class="ch" style="--n:${c.to - c.from + 1}"><b></b></div>`).join('');
+  const fills = [...scrub.querySelectorAll('.ch b')];
+  const segs = [...scrub.querySelectorAll('.ch')];
+  function slideAtX(x) {
+    for (let i = 0; i < chapters.length; i++) {
+      const r = segs[i].getBoundingClientRect(), c = chapters[i], n = c.to - c.from + 1;
+      if (x <= r.right + 1.5 || i === chapters.length - 1)
+        return c.from + Math.max(0, Math.min(n - 1, Math.floor(((x - r.left) / r.width) * n)));
+    }
+    return 0;
+  }
+  function showPeek(x) {
+    const i = slideAtX(x), r = scrub.getBoundingClientRect(), w = peek.offsetWidth;
+    peek.querySelector('img').src = thumb(i);
+    peek.querySelector('div').innerHTML = `<span>${i + 1}</span>`;
+    peek.querySelector('div').append(titleOf(i));
+    peek.style.left = `${Math.max(10, Math.min(innerWidth - w - 10, x - w / 2))}px`;
+    peek.style.bottom = `${innerHeight - r.top + 12}px`;
+    peek.classList.add('on');
+  }
+  let scrubbing = false;
+  scrub.addEventListener('pointermove', e => { showPeek(e.clientX); if (scrubbing) go(slideAtX(e.clientX), { instant: true }); });
+  scrub.addEventListener('pointerleave', () => { if (!scrubbing) peek.classList.remove('on'); });
+  scrub.addEventListener('pointerdown', e => { scrubbing = true; scrub.setPointerCapture(e.pointerId); go(slideAtX(e.clientX)); });
+  scrub.addEventListener('pointerup', () => { scrubbing = false; peek.classList.remove('on'); });
+  scrub.addEventListener('pointercancel', () => { scrubbing = false; peek.classList.remove('on'); });
+
+  // ---------- overview ----------
+  $('gridin').innerHTML = chapters.map(c => {
+    let h = `<h2>${c.name}</h2><div class="tiles">`;
+    for (let i = c.from; i <= c.to; i++)
+      h += `<a href="#${i + 1}" data-i="${i}"><img loading="lazy" src="${thumb(i)}" alt=""><span><b>${i + 1}</b><em style="font-style:normal">${titleOf(i)}</em></span></a>`;
+    return h + '</div>';
+  }).join('');
+  const tiles = [...document.querySelectorAll('#grid a')];
+  let sel = 0;
+  const setSel = i => {
+    sel = Math.max(0, Math.min(N - 1, i));
+    tiles.forEach((a, j) => a.classList.toggle('sel', j === sel));
+    tiles[sel].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+  const closeOverlays = () => body.classList.remove('show-grid', 'show-help', 'show-notes');
+  const toggleGrid = () => {
+    body.classList.remove('show-help');
+    if (body.classList.toggle('show-grid')) {
+      setSel(cur);
+      tiles[cur].scrollIntoView({ block: 'center' });
+    }
+  };
+  const openTile = i => { body.classList.remove('show-grid'); go(i); };
+  $('grid').addEventListener('click', e => {
+    e.stopPropagation();
+    const a = e.target.closest('a');
+    if (a) { e.preventDefault(); openTile(+a.dataset.i); }
+    else body.classList.remove('show-grid');
+  });
+  const columns = () => {
+    const t = tiles[sel].parentElement;
+    return getComputedStyle(t).gridTemplateColumns.split(' ').length;
+  };
+
+  // ---------- controls ----------
+  const toggle = c => body.classList.toggle(c);
+  const fullOK = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  if (!fullOK) $('bfull').style.display = 'none';
+  const actions = {
+    bprev: () => step(-1),
+    bnext: () => step(1),
+    bgrid: toggleGrid,
+    bfull: () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(),
+    bpres: () => openStart()
+  };
+  Object.entries(actions).forEach(([id, fn]) => { $(id).onclick = e => { fn(); e.currentTarget.blur(); }; });
+  const setBlack = (on, remote) => {
+    body.classList.toggle('black', on);
+    if (chan && !remote) chan.postMessage({ type: 'black', on });
+  };
+
+  // ---------- start sheet: modes and displays ----------
+  // A browser only reaches a second display through the Window Management API (Chrome and Edge).
+  // Without it, the window has to be dragged across by hand, and the sheet says so.
+  const canPlace = 'getScreenDetails' in window;
+  let details = null, target = null, access = canPlace ? 'prompt' : 'none', startNote = '';
+  const allScreens = () => details?.screens || [];
+  const screenName = s => s.label || (s.isInternal ? 'Built-in display' : 'External display');
+  const pickTarget = () => {
+    const l = allScreens();
+    if (l.includes(target)) return;
+    target = l.find(s => !s.isInternal && s !== details.currentScreen) || l.find(s => !s.isInternal) || l.find(s => s !== details.currentScreen) || l[0] || null;
+  };
+  function renderStart() {
+    const l = allScreens(), many = l.length > 1;
+    const ext = !!window.screen.isExtended;
+    const ask = canPlace && !details && access === 'prompt' && ext;
+    let msg = '';
+    if (startNote) msg = startNote;
+    else if (ask) msg = 'A second display is connected. Allow access to use it.';
+    else if (access === 'denied') msg = 'Display access is blocked. Allow “Window management” in the site settings, or drag the slides across yourself.';
+    else if (!canPlace) msg = 'This browser cannot reach a second display. Use Chrome or Edge, or drag the slides across yourself.';
+    else if (!many) msg = 'One display found. To use another, set it to Extended in System Settings → Displays.';
+    $('dstatus').textContent = msg;
+    const picker = $('picker'); picker.textContent = '';
+    if (many) l.forEach(s => {
+      const b = document.createElement('button');
+      const name = document.createElement('span'); name.textContent = screenName(s);
+      b.append(name);
+      b.className = 'rowi' + (s === target ? ' on' : '');
+      b.setAttribute('aria-pressed', s === target);
+      b.onclick = () => { target = s; renderStart(); };
+      picker.append(b);
+    });
+    $('picklabel').hidden = !many;
+    $('prow').hidden = !isPresenter;
+    $('allow').hidden = !ask;
+    $('modes').hidden = ask;
+    $('mpres').textContent = isPresenter ? 'Move slides here' : 'Start presenting';
+  }
+  async function loadDisplays(ask) {
+    if (!canPlace) return renderStart();
+    if (!details) {
+      try { access = (await navigator.permissions.query({ name: 'window-management' })).state; } catch { access = 'prompt'; }
+      if (access === 'granted' || (access === 'prompt' && ask)) {
+        try {
+          details = await window.getScreenDetails();
+          access = 'granted';
+          details.addEventListener('screenschange', () => { pickTarget(); renderStart(); });
+          details.addEventListener('currentscreenchange', () => { startNote = ''; renderStart(); });
+        } catch { access = 'denied'; }
+      }
+    }
+    if (details) pickTarget();
+    renderStart();
+  }
+  function openStart(note = '') {
+    startNote = note;
+    closeOverlays(); body.classList.add('show-start');
+    renderStart(); loadDisplays(false);
+  }
+  const closeStart = () => { startNote = ''; body.classList.remove('show-start'); };
+  async function fullscreenOn(screen) {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    await document.documentElement.requestFullscreen(screen ? { screen } : {});
+  }
+  // Presenter: this window stays put and becomes the presenter view; the slides open as a new
+  // window on the projector. The presenter view can therefore never leave the laptop.
+  // kept for this tab, so a refresh picks the running show back up
+  let pw = null, slidesFull = false, slidesOn = sessionStorage.getItem('ateno-slides-on') || '', firstPressUsed = false;
+  let slidesAlive = false, currentSlides = sessionStorage.getItem('ateno-slides-id') || '';
+  let autoFull = localStorage.getItem('ateno-autofull') !== '0';
+  const NEXT_KEYS = ['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'MediaTrackNext'];
+  async function startPresenter() {
+    const id = String(Date.now());
+    const url = `${location.pathname}?slides=${id}#${cur + 1}`;
+    const others = allScreens().filter(s => s !== target);
+    if (!target || !others.length) {
+      closeStart();
+      if (canPlace && access !== 'denied') return setPresenter(true);        // one display: switch in place
+      stopSlides(id);
+      pw = window.open(url, `slides${id}`, 'popup,width=1280,height=720');    // moved to the other display by hand
+      if (!pw) return openStart('The slides window was blocked. Allow pop-ups for this site, then try again.');
+      slidesOn = ''; rememberSlides(id);
+      return setPresenter(true);
+    }
+    if (target === details.currentScreen)
+      return openStart(`Move this window to ${screenName(others[0])} first, or choose it for the slides.`);
+    closeStart();
+    stopSlides(id);
+    pw = window.open(url, `slides${id}`, `popup,fullscreen,left=${target.availLeft},top=${target.availTop},width=${target.availWidth},height=${target.availHeight}`);
+    if (!pw) return openStart('The slides window was blocked. Allow pop-ups for this site, then try again.');
+    slidesOn = screenName(target); slidesFull = false; firstPressUsed = false;
+    rememberSlides(id);
+    window.focus();
+    setPresenter(true);
+  }
+  // closes any slides window, including one left over from before a page reload
+  function stopSlides(keep) {
+    chan?.postMessage({ type: 'end', keep });
+    pw?.close(); pw = null; slidesFull = false; slidesAlive = false;
+    if (!keep) { currentSlides = ''; slidesOn = ''; sessionStorage.removeItem('ateno-slides-id'); sessionStorage.removeItem('ateno-slides-on'); }
+  }
+  function rememberSlides(id) {
+    currentSlides = id;
+    sessionStorage.setItem('ateno-slides-id', id);
+    sessionStorage.setItem('ateno-slides-on', slidesOn);
+  }
+  const slidesOpen = () => (pw && !pw.closed) || slidesAlive;
+  async function resetDisplays() {
+    stopSlides();
+    setPresenter(false);
+    details = null; target = null;
+    await loadDisplays(false);
+    openStart();
+  }
+
+  // A new window cannot go full screen by itself. A click or key press here lends it permission.
+  function fullscreenSlides() {
+    if (slidesFull || !slidesOpen()) return;
+    if ((!pw || pw.closed) && currentSlides) { try { pw = window.open('', `slides${currentSlides}`); } catch { return; } }   // after a refresh
+    if (!pw) return;
+    try { pw.postMessage('fullscreen', { targetOrigin: location.origin, delegate: 'fullscreen' }); } catch {}
+  }
+  function updateBanner() {
+    const live = slidesOpen();
+    $('pfs').hidden = !(live && slidesOn && !slidesFull);
+    $('rehearse').textContent = !isPresenter || !live ? ''
+      : slidesOn ? `Slides on ${slidesOn}`
+      : 'Drag the slides onto the other display, click them and press F';
+  }
+
+  // Viewer | Presenter: the one control for changing mode
+  async function switchMode(to) {
+    if (to === (isPresenter ? 'presenter' : 'viewer')) return;
+    if (to === 'viewer') {
+      stopSlides();
+      return setPresenter(false);
+    }
+    if (canPlace && !details) await loadDisplays(false);
+    if (allScreens().length > 1) return startPresenter();
+    if (!canPlace || access === 'denied' || (window.screen.isExtended && !details)) return openStart();
+    setPresenter(true);
+  }
+  document.querySelectorAll('#seg button').forEach(b => { b.onclick = () => { switchMode(b.dataset.m); b.blur(); }; });
+  $('pfs').onclick = fullscreenSlides;
+  // With the setting on, the first key or clicker press fills the display and does not also change slide.
+  addEventListener('keydown', e => {
+    if (noteClicker(e)) return;
+    if (!autoFull || e.key === 'Escape' || !slidesOpen() || !slidesOn || slidesFull) return;
+    fullscreenSlides();
+    if (!firstPressUsed && NEXT_KEYS.includes(e.key)) { firstPressUsed = true; e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  addEventListener('pointerdown', () => { if (autoFull) fullscreenSlides(); }, true);
+  function setAutoFull(on) {
+    autoFull = on;
+    localStorage.setItem('ateno-autofull', on ? '1' : '0');
+    $('sfull').setAttribute('aria-checked', on);
+  }
+  $('sfull').onclick = () => setAutoFull(!autoFull);
+  setAutoFull(autoFull);
+  setInterval(() => { if (pw?.closed) { pw = null; slidesAlive = false; updateBanner(); } }, 700);
+
+  // the slides window
+  let reportSlides = null;
+  if (audience) {
+    const report = () => chan?.postMessage({ type: 'slides', id: slidesId, full: !!document.fullscreenElement, black: body.classList.contains('black') });
+    reportSlides = report;
+    addEventListener('pagehide', () => chan?.postMessage({ type: 'slides-gone', id: slidesId }));
+    addEventListener('message', e => {
+      if (e.origin === location.origin && e.data === 'fullscreen') document.documentElement.requestFullscreen().catch(() => {});
+    });
+    document.addEventListener('fullscreenchange', report);
+    const goFull = () => { if (localStorage.getItem('ateno-autofull') !== '0' && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); };
+    addEventListener('keydown', goFull); addEventListener('pointerdown', goFull);
+    report();
+  }
+
+  async function startSlides() {
+    closeStart();
+    stopSlides(); setPresenter(false);
+    try { await fullscreenOn(target); }
+    catch { openStart('Click Slides only again to continue.'); }
+  }
+  $('mpres').onclick = startPresenter;
+  $('mslides').onclick = startSlides;
+  $('mskip').onclick = closeStart;
+  $('mreset').onclick = resetDisplays;
+  $('pgear').onclick = () => openStart();
+  $('rowhelp').onclick = () => { body.classList.remove('show-start'); body.classList.add('show-help'); };
+  $('hclose').onclick = () => body.classList.remove('show-help');
+  $('help').addEventListener('click', e => { if (e.target === $('help')) body.classList.remove('show-help'); });
+  $('allow').onclick = () => loadDisplays(true);
+  $('start').addEventListener('click', e => { if (e.target === $('start')) closeStart(); });
+  window.screen.addEventListener?.('change', () => { if (body.classList.contains('show-start')) loadDisplays(false); });
+
+  // ---------- phone, tablet and watch remote ----------
+  // The site is static, so phone and computer talk through a public relay, on a private random channel.
+  // It connects only after the remote is switched on here, and carries only commands such as "next".
+  const RELAY = 'https://ntfy.sh/';
+  let room = localStorage.getItem('ateno-room'), relay = null, remoteSeen = false;
+  const heard = new Set();
+  const newRoom = () => 'ateno-' + [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
+  const say = m => fetch(`${RELAY}${room}?cache=no`, { method: 'POST', body: m }).catch(() => {});
+  const sayWhere = () => say(`at:${cur}:${body.classList.contains('black') ? 1 : 0}:${isPresenter ? 'p' : 'v'}`);
+  const remoteStatus = () => {};
+  function connectRemote() {
+    if (relay || audience) return;
+    relay = new EventSource(`${RELAY}${room}/sse`);
+    relay.onopen = () => { remoteStatus('Ready. Waiting for your phone or tablet.'); say('hi'); };   // open remotes answer with hello
+    relay.onerror = () => remoteStatus('Reconnecting to the relay…');
+    connectLaser();
+    relay.onmessage = e => {
+      let d; try { d = JSON.parse(e.data); } catch { return; }
+      if (d.event !== 'message' || heard.has(d.id)) return;
+      heard.add(d.id);
+      const [cmd, from, name] = String(d.message).split('~');
+      if (!['next', 'prev', 'first', 'black', 'hello', 'ping', 'bye'].includes(cmd)) return;
+      const id = from || 'watch';      // the watch Shortcuts send a bare command
+      if (cmd === 'bye') return dropDevice(id);
+      if (cmd === 'next') go(cur + 1, { fromRemote: true });
+      else if (cmd === 'prev') go(cur - 1, { fromRemote: true });
+      else if (cmd === 'first') go(0, { fromRemote: true });
+      else if (cmd === 'black') setBlack(!body.classList.contains('black'));
+      else if (cmd === 'hello') { remoteSeen = true; sayWhere(); }
+      seeDevice(id, name || (id === 'watch' ? 'Apple Watch' : ''), CMD_NAMES[cmd]);
+    };
+  }
+  // remotes connected through the relay, shown in the remote sheet, the toolbar and the presenter header
+  const devices = new Map();
+  const CMD_NAMES = { next: 'Next', prev: 'Back', first: 'First slide', black: 'Black screen' };
+  const QUIET = 200000;       // a phone pings every 90 s while its page is open
+  const CLICKER_ONLY = ['PageDown', 'PageUp', 'F5', 'MediaTrackNext', 'MediaTrackPrevious'];
+  const ago = t => { const s = Math.round((Date.now() - t) / 1000); return s < 3 ? 'just now' : s < 60 ? `${s}s ago` : `${Math.floor(s / 60)}m ago`; };
+  const isQuiet = (id, d) => id !== 'watch' && Date.now() - d.seen > QUIET;
+  const statusItem = (id, d) => {
+    const s = document.createElement('span');
+    s.className = 'st' + (isQuiet(id, d) ? '' : ' on') + (d.fresh ? ' ping' : '');
+    s.append(document.createElement('i'), d.name);
+    return s;
+  };
+  function renderDevices() {
+    const list = [...devices];
+    const here = list.map(([id, d]) => {
+      const s = statusItem(id, d);
+      s.lastChild.textContent = `${d.name} ${isQuiet(id, d) ? 'not responding' : 'connected'}`;
+      return s;
+    });
+    if (!here.length) { const s = document.createElement('span'); s.className = 'st'; s.append(document.createElement('i'), 'Phone not connected'); here.push(s); }
+    $('pdevs').replaceChildren(...here);
+    $('rdevs').replaceChildren(...list.map(([id, d]) => {
+      const row = document.createElement('div'); row.className = 'rowi';
+      const name = document.createElement('span'); name.textContent = d.name;
+      const what = document.createElement('span');
+      what.className = 'val' + (isQuiet(id, d) ? '' : ' ok');
+      what.textContent = isQuiet(id, d) ? 'Not responding' : d.action ? `${d.action} · ${ago(d.seen)}` : 'Connected';
+      row.append(name, what);
+      return row;
+    }));
+    const phones = list.filter(([id]) => id !== 'watch');
+    $('rtitle').textContent = phones.length ? `${phones[0][1].name} connected` : 'Scan to connect';
+    $('rhint').textContent = phones.length ? 'Press Next to try it.' : 'Use your phone or tablet camera.';
+    const names = list.map(([, d]) => d.name).join(', ');
+    $('remval').textContent = names || (localStorage.getItem('ateno-remote-on') ? 'Waiting' : 'Off');
+    $('remval').classList.toggle('ok', !!names);
+    list.forEach(([, d]) => { d.fresh = false; });
+    renderClicker();
+  }
+  // A clicker is plugged into the computer, so it has its own indicator, apart from the remotes.
+  // Three ways to recognise one: USB identity (WebHID), keys only clickers send, and how brief a press is.
+  let clickerAt = +sessionStorage.getItem('ateno-clicker-at') || 0, clickerFresh = false, hidDev = null, pairing = false, pairT;
+  const clickerName = () => hidDev?.productName || 'Clicker';
+  function renderClicker() {
+    const on = !!clickerAt || !!hidDev;
+    $('clkstate').textContent = pairing ? 'Press forward on the clicker' : hidDev ? clickerName() : on ? 'Detected' : 'Not detected';
+    $('clkstate').classList.toggle('ok', on && !pairing);
+    $('clkfind').hidden = on && !pairing;
+    $('pclk').className = (on ? 'on' : '') + (clickerFresh ? ' ping' : '');
+    $('pclk').replaceChildren(document.createElement('i'), on ? `${clickerName()} connected` : 'Clicker not detected');
+    const st = [...devices].map(([id, d]) => statusItem(id, d));
+    if (on) { const c = document.createElement('span'); c.className = 'st on' + (clickerFresh ? ' ping' : ''); c.append(document.createElement('i'), clickerName()); st.unshift(c); }
+    $('bstat').replaceChildren(...st);
+    clickerFresh = false;
+  }
+  function seeClicker() {
+    if (!clickerAt && !hidDev) flash('Clicker detected');
+    clickerAt = Date.now(); clickerFresh = true;
+    sessionStorage.setItem('ateno-clicker-at', clickerAt);
+    renderClicker();
+  }
+  const reportClicker = () => { if (audience) chan?.postMessage({ type: 'clicker' }); else seeClicker(); };
+  const hidKey = d => `${d.vendorId}:${d.productId}`;
+  async function loadHID() {
+    if (!navigator.hid || audience) return;
+    const saved = localStorage.getItem('ateno-clicker-hid');
+    const known = await navigator.hid.getDevices().catch(() => []);
+    hidDev = known.find(d => hidKey(d) === saved) || null;
+    renderClicker();
+    navigator.hid.addEventListener('connect', e => {
+      if (hidKey(e.device) !== localStorage.getItem('ateno-clicker-hid')) return;
+      hidDev = e.device; clickerFresh = true; flash(`${clickerName()} connected`); renderClicker();
+    });
+    navigator.hid.addEventListener('disconnect', e => {
+      if (!hidDev || hidKey(e.device) !== hidKey(hidDev)) return;
+      const n = clickerName(); hidDev = null; clickerAt = 0; sessionStorage.removeItem('ateno-clicker-at'); flash(`${n} disconnected`); renderClicker();
+    });
+  }
+  async function detectClicker() {
+    if (navigator.hid) {
+      startNote = 'Choose your clicker in the list. If it is not there, press Cancel.'; renderStart();
+      try {
+        const [d] = await navigator.hid.requestDevice({ filters: [] });
+        startNote = ''; renderStart();
+        if (d) { hidDev = d; localStorage.setItem('ateno-clicker-hid', hidKey(d)); clickerFresh = true; flash(`${clickerName()} connected`); return renderClicker(); }
+      } catch { startNote = ''; renderStart(); }
+    }
+    pairing = true; renderClicker();
+    clearTimeout(pairT); pairT = setTimeout(() => { pairing = false; renderClicker(); }, 15000);
+  }
+
+  function seeDevice(id, name, action) {
+    const known = devices.has(id);
+    if (!known && devices.size >= 8) return;
+    const d = devices.get(id) || {};
+    Object.assign(d, { name: String(name || d.name || 'Remote').slice(0, 24), seen: Date.now(), fresh: !!action || !known });
+    if (action) d.action = action;
+    devices.set(id, d);
+    if (!known) {
+      flash(`${d.name} connected`);
+      if (body.classList.contains('show-remote')) {
+        $('rok').classList.remove('on'); $('rok').offsetWidth; $('rok').classList.add('on');
+      }
+    }
+    renderDevices();
+  }
+  function dropDevice(id) {
+    const d = devices.get(id);
+    if (!d) return;
+    devices.delete(id);
+    flash(`${d.name} disconnected`);
+    if (![...devices.keys()].some(k => k !== 'watch')) remoteSeen = false;
+    renderDevices();
+  }
+  // Clickers that send arrow keys look like a keyboard, except that their presses last a few milliseconds.
+  const SHARED_KEYS = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', ' ', 'Enter', 'Tab', 'Backspace'];
+  const BRIEF_MS = 40;
+  const learned = new Set(JSON.parse(localStorage.getItem('ateno-clicker-keys') || '[]'));
+  const pressedAt = {};
+  function noteClicker(e) {
+    if (e.repeat) return false;
+    const k = e.key;
+    if (pairing && (SHARED_KEYS.includes(k) || CLICKER_ONLY.includes(k) || k === '.' || k === 'b')) {
+      pairing = false; clearTimeout(pairT);
+      learned.add(k); localStorage.setItem('ateno-clicker-keys', JSON.stringify([...learned]));
+      seeClicker();
+      e.preventDefault(); e.stopImmediatePropagation();     // a test press does not change slide
+      return true;
+    }
+    pressedAt[k] = performance.now();
+    if (CLICKER_ONLY.includes(k) || learned.has(k)) reportClicker();
+    return false;
+  }
+  addEventListener('keyup', e => {
+    const t = pressedAt[e.key]; delete pressedAt[e.key];
+    if (t !== undefined && SHARED_KEYS.includes(e.key) && performance.now() - t <= BRIEF_MS) reportClicker();
+  }, true);
+  setInterval(renderDevices, 5000);
+
+  // ---------- laser pointer, drawn from the phone ----------
+  const dotEl = document.createElement('div'); dotEl.id = 'laser'; deck.append(dotEl);
+  let laser = null, dotX = 0, dotY = 0, aimX = 0, aimY = 0, dotShown = false, dotLoop = 0, dotT;
+  function dotFrame() {
+    dotX += (aimX - dotX) * .3; dotY += (aimY - dotY) * .3;
+    dotEl.style.transform = `translate(${dotX * 1920}px,${dotY * 1080}px)`;
+    dotLoop = dotShown ? requestAnimationFrame(dotFrame) : 0;
+  }
+  function showLaser(s) {
+    clearTimeout(dotT);
+    const off = () => { dotShown = false; dotEl.classList.remove('on'); };
+    if (s === 'off') return off();
+    const [x, y] = String(s).split(',').map(Number);
+    if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) return;
+    if (!dotShown) { dotX = x; dotY = y; }
+    aimX = x; aimY = y; dotShown = true;
+    dotEl.classList.add('on');
+    dotT = setTimeout(off, 1600);          // in case the final message is lost
+    if (!dotLoop) dotLoop = requestAnimationFrame(dotFrame);
+  }
+  const onLaser = s => { showLaser(s); chan?.postMessage({ type: 'laser', s }); };
+  function connectLaser() {
+    if (laser || audience) return;
+    const start = () => { if (relay && !laser) laser = window.laserListen(`${room}/laser`, onLaser); };
+    if (window.laserListen) return start();
+    const s = document.createElement('script'); s.src = 'assets/laser-link.js'; s.onload = start; document.head.append(s);
+  }
+  const stopLaser = () => { laser?.close(); laser = null; };
+
+  let flashT;
+  function flash(text) {
+    $('jump').textContent = text; $('jump').classList.add('on');
+    clearTimeout(flashT); flashT = setTimeout(() => $('jump').classList.remove('on'), 2500);
+  }
+  function loadQR() {
+    return window.qrcode ? Promise.resolve() : new Promise((ok, no) => {
+      const s = document.createElement('script'); s.src = 'assets/qrcode.js'; s.onload = ok; s.onerror = no; document.head.append(s);
+    });
+  }
+  async function drawQR() {
+    const url = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}remote.html#${room}`;
+    $('rlink').href = url;
+    try {
+      await loadQR();
+      const q = window.qrcode(0, 'M'); q.addData(url); q.make();
+      $('rqr').innerHTML = q.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
+    } catch { $('rqr').textContent = 'QR code unavailable'; }
+  }
+  function openRemote() {
+    closeOverlays(); body.classList.remove('show-start');
+    if (!room) { room = newRoom(); localStorage.setItem('ateno-room', room); }
+    localStorage.setItem('ateno-remote-on', '1');
+    body.classList.add('show-remote');
+    connectRemote(); drawQR(); renderDevices();
+  }
+  $('rowremote').onclick = openRemote;
+  $('clkfind').onclick = detectClicker;
+  $('pdevs').onclick = openRemote;
+  $('pclk').onclick = () => openStart();
+  loadHID();
+  $('rclose').onclick = () => body.classList.remove('show-remote');
+  $('remote').addEventListener('click', e => { if (e.target === $('remote')) body.classList.remove('show-remote'); });
+  $('roff').onclick = () => { stopLaser(); relay?.close(); relay = null; remoteSeen = false; devices.clear(); renderDevices(); localStorage.removeItem('ateno-remote-on'); body.classList.remove('show-remote'); };
+  $('rnew').onclick = () => {
+    stopLaser(); relay?.close(); relay = null; remoteSeen = false;
+    devices.clear(); renderDevices();
+    room = newRoom(); localStorage.setItem('ateno-room', room);
+    connectRemote(); drawQR();
+  };
+
+  // typing a number then Return jumps to that slide
+  const CLICKER_KEYS = ['PageDown', 'PageUp', 'MediaTrackNext', 'MediaTrackPrevious', 'F5', '.'];
+  let typed = '', typedT;
+  const showTyped = () => {
+    $('jump').innerHTML = `<i>Go to slide</i>${typed}`;
+    $('jump').classList.toggle('on', !!typed);
+    clearTimeout(typedT);
+    typedT = setTimeout(() => { typed = ''; $('jump').classList.remove('on'); }, 2500);
+  };
+
+  addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (audience && /^[pdngrPDNGR?]$/.test(k)) return;      // the slides window only moves slides
+    if (body.classList.contains('show-start')) {
+      e.preventDefault();
+      if (e.repeat) return;
+      if (k === 'Enter' || k === 'F5') { if (!$('allow').hidden) $('allow').click(); else if (!e.target.closest?.('#start button')) startPresenter(); else e.target.click(); }
+      else if (k === ' ' && e.target.closest?.('#start button')) e.target.click();
+      else if (k === 'Tab') { e.preventDefault(); const f = [...$('start').querySelectorAll('button:not([hidden])')].filter(b => b.offsetParent); f[(f.indexOf(document.activeElement) + (e.shiftKey ? -1 : 1) + f.length) % f.length]?.focus(); }
+      else if (!['Shift', 'Meta', 'Control', 'Alt'].includes(k)) closeStart();
+      return;
+    }
+    // clickers: a held button repeats its key, which must not race through the deck
+    if (e.repeat && CLICKER_KEYS.includes(k)) { e.preventDefault(); return; }
+    // clicker "start" button (F5 or Shift+F5): full screen rather than reloading the page
+    if (k === 'F5') { e.preventDefault(); if (fullOK && !document.fullscreenElement) actions.bfull(); return; }
+    if (body.classList.contains('show-grid')) {
+      const map = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns(), ArrowUp: -columns(), PageDown: 1, PageUp: -1, MediaTrackNext: 1, MediaTrackPrevious: -1 };
+      if (k in map) { e.preventDefault(); setSel(sel + map[k]); return; }
+      if (k === 'Enter' || k === ' ') { e.preventDefault(); openTile(sel); return; }
+    }
+    if (/^[0-9]$/.test(k)) { typed = (typed + k).slice(0, 3); showTyped(); return; }
+    if (k === 'Enter' && typed) {
+      e.preventDefault(); const n = parseInt(typed, 10); typed = ''; showTyped();
+      if (n >= 1) go(n - 1);
+      return;
+    }
+    if (body.classList.contains('black') && k !== 'f' && k !== 'F') { e.preventDefault(); setBlack(false); return; }
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'MediaTrackNext'].includes(k)) { e.preventDefault(); step(1); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'MediaTrackPrevious'].includes(k)) { e.preventDefault(); step(-1); }
+    else if (k === 'Home') go(0);
+    else if (k === 'End') go(N - 1);
+    else if (k === 'f' || k === 'F') actions.bfull();
+    else if (k === 'g' || k === 'G') toggleGrid();
+    else if (k === 'n' || k === 'N') { if (!isPresenter) toggle('show-notes'); }
+    else if (k === 'p' || k === 'P') switchMode(isPresenter ? 'viewer' : 'presenter');
+    else if (k === 'd' || k === 'D') openStart();
+    else if (k === 'r' || k === 'R') openRemote();
+    else if (k === 'b' || k === 'B' || k === '.') setBlack(true);
+    else if (k === '?') toggle('show-help');
+    else if (k === 'Escape') { closeOverlays(); body.classList.remove('show-remote'); }
+  });
+
+  // click the right of a slide to advance, the left third to go back
+  $('stage').addEventListener('click', e => {
+    const link = e.target.closest('a');
+    if (link) {                                    // slide links: sources open in a new tab, data-go jumps inside the deck
+      if (link.dataset.go) { e.preventDefault(); go(slides.findIndex(s => s.id === link.dataset.go)); }
+      return;
+    }
+    const r = $('stage').getBoundingClientRect();
+    step(e.clientX < r.left + r.width * 0.3 ? -1 : 1);
+  });
+  $('black').addEventListener('click', () => setBlack(false));
+
+  let tx = null;
+  addEventListener('touchstart', e => { tx = e.touches[0].clientX; wake(); }, { passive: true });
+  addEventListener('touchend', e => {
+    if (tx === null || body.classList.contains('show-grid')) return;
+    const dx = e.changedTouches[0].clientX - tx; tx = null;
+    if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+  });
+
+  // hide controls and the cursor when idle
+  let idle;
+  const sleep = () => {
+    if (isPresenter || $('bar').matches(':hover') || scrubbing) return wake();
+    body.classList.add('idle');
+  };
+  function wake() { body.classList.remove('idle'); clearTimeout(idle); idle = setTimeout(sleep, 2800); }
+  addEventListener('mousemove', wake); wake();
+
+  // keep the main and presenter windows in step
+  if (chan) chan.onmessage = e => {
+    if (e.data?.type === 'go') go(e.data.n, { remote: true });
+    if (e.data?.type === 'black') setBlack(e.data.on, true);
+    if (e.data?.type === 'end' && audience && e.data.keep !== slidesId) window.close();
+    if (e.data?.type === 'clicker' && !audience) seeClicker();
+    if (e.data?.type === 'laser') showLaser(e.data.s);
+    if (e.data?.type === 'who' && audience) reportSlides?.();
+    if (e.data?.type === 'slides-gone' && !audience && e.data.id === currentSlides) { slidesAlive = false; slidesFull = false; updateBanner(); }
+    if (e.data?.type === 'slides' && !audience) {
+      slidesAlive = true; slidesFull = e.data.full;
+      if (!currentSlides) currentSlides = e.data.id;
+      if (e.data.black) setBlack(true, true);
+      updateBanner();
+      if (!slidesFull && autoFull) fullscreenSlides();   // works while the click that opened the window still counts
+    }
+  };
+
+  // presenter header: elapsed time, wall clock, notes size
+  let clockOn = false;
+  function startClock() {
+    if (clockOn) return; clockOn = true;
+    const saved = JSON.parse(sessionStorage.getItem('ateno-timer') || 'null');
+    let base = saved?.base ?? Date.now(), held = saved?.held ?? null, size = +localStorage.getItem('ateno-notes') || 22;
+    const keep = () => {
+      sessionStorage.setItem('ateno-timer', JSON.stringify({ base, held }));
+      $('tpause').textContent = held === null ? 'Pause' : 'Resume';
+      $('timer').classList.toggle('paused', held !== null);
+    };
+    document.documentElement.style.setProperty('--notes', size + 'px');
+    const pad = v => String(v).padStart(2, '0');
+    const tick = () => {
+      const s = Math.floor(((held ?? Date.now()) - base) / 1000);
+      $('timer').textContent = `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+      $('clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+    setInterval(tick, 500); tick(); keep();
+    $('tpause').onclick = () => {
+      if (held === null) held = Date.now(); else { base += Date.now() - held; held = null; }
+      keep();
+    };
+    $('treset').onclick = () => { base = Date.now(); if (held !== null) held = base; keep(); tick(); };
+    const font = d => {
+      size = Math.max(16, Math.min(40, size + d));
+      localStorage.setItem('ateno-notes', size);
+      document.documentElement.style.setProperty('--notes', size + 'px');
+    };
+    $('timer').onclick = () => $('tpause').onclick();
+    $('tsmall').onclick = () => font(-2);
+    $('tlarge').onclick = () => font(2);
+  }
+  const baseTitle = document.title;
+  function setPresenter(on) {
+    isPresenter = on;
+    if (!audience) localStorage.setItem('ateno-mode', on ? 'presenter' : 'viewer');
+    body.classList.toggle('presenter', on);
+    document.title = on ? 'Presenter · ' + baseTitle : baseTitle;
+    document.querySelectorAll('#seg button').forEach(b => {
+      const active = (b.dataset.m === 'presenter') === on;
+      b.classList.toggle('on', active); b.setAttribute('aria-pressed', active);
+    });
+    updateBanner();
+    if (remoteSeen) { clearTimeout(atTimer); atTimer = setTimeout(sayWhere, 400); }
+    if (on) { startClock(); renderNext(); playBuilds(slides[cur]); }
+    fit(); wake();
+  }
+
+  // print: load embeds and show every slide
+  addEventListener('beforeprint', () => slides.forEach(s => s.querySelectorAll('iframe[data-src]').forEach(f => { if (!f.src) f.src = f.dataset.src; })));
+
+  addEventListener('hashchange', () => go((parseInt(location.hash.slice(1), 10) || 1) - 1, { fromHash: true }));
+  const firstVisit = !location.hash && !audience && matchMedia('(hover:hover)').matches && window.screen.isExtended;
+  fit();
+  go((parseInt(location.hash.slice(1), 10) || 1) - 1, { fromHash: true, instant: true });
+  body.classList.toggle('audience', audience);
+  const resume = !audience && localStorage.getItem('ateno-mode') === 'presenter' && innerWidth > 720;
+  if (!audience && room && localStorage.getItem('ateno-remote-on')) connectRemote();
+  setPresenter(resume);
+  if (resume) chan?.postMessage({ type: 'who' });      // is a slides window still open from before the refresh?
+  fit();
+  renderDevices();
+  if (firstVisit && !resume) openStart();
+  const ready = () => body.classList.add('ready');
+  (document.fonts?.ready || Promise.resolve()).then(ready); setTimeout(ready, 1200);
+})();
+</script>
+</body>
+</html>
