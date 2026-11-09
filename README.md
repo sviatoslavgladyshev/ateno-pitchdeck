@@ -37,3 +37,12 @@ Pictures from the website (`place-*`, `map-*`, `device-main`) are in `deck_en/as
 → / Space next · ← back · G all slides · N notes · P presenter · F full screen · R phone remote · B black screen
 
 Honesty labels ("Concept render", "Illustrative build-up") are part of the slides on purpose — keep them.
+
+## Private link with email sign-in (Firebase)
+The deck is also published at **https://pitch.ateno.co** (and https://ateno-pitch.web.app), Firebase project `ateno-pitch` (free Spark plan).
+Visitors enter their email and get a one-time sign-in link from Firebase; only then is the deck loaded.
+
+- Publish after a rebuild: `python3 publish.py` (needs `firebase` and `gcloud` logged in). `--rotate` changes the secret folder for images.
+- Who opened the deck: Firebase console → Firestore → `views` (email, language, time).
+- Remove someone's access: console → Authentication → delete the user (a new link would let them back in, as with any email gate).
+- How it is protected is described at the top of `publish.py`; the read rules are in `firestore.rules`.

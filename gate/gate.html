@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="{{LANG}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>{{TITLE}}</title>
+<link rel="icon" href="{{ASSETS}}favicon.png">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#05050a;color:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(circle at 50% 30%,rgba(60,40,140,.35),rgba(0,0,0,0) 60%),#05050a}
+main{width:min(440px,100%);text-align:center}
+img.logo{width:64px;height:auto;margin-bottom:28px}
+h1{font-size:34px;line-height:1.15;letter-spacing:-.8px;margin:0 0 12px;font-weight:700}
+p{margin:0;color:#a1a1a6;font-size:16px;line-height:1.5}
+form{display:flex;flex-direction:column;gap:12px;margin-top:32px}
+input{all:unset;box-sizing:border-box;width:100%;padding:15px 16px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);font-size:17px;color:#f5f5f7;text-align:left}
+input:focus{border-color:#a593f5}
+button{all:unset;box-sizing:border-box;cursor:pointer;width:100%;padding:15px;border-radius:12px;background:#f5f5f7;color:#05050a;font-weight:600;font-size:17px;text-align:center}
+button[disabled]{opacity:.5;cursor:default}
+button:focus-visible,a:focus-visible{outline:2px solid #a593f5;outline-offset:3px}
+.msg{min-height:22px;margin-top:16px;font-size:14px}
+.msg.bad{color:#ff6b6b}
+.small{margin-top:40px;font-size:13px;color:#6e6e73}
+.small a{color:#a1a1a6}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <img class="logo" src="{{ASSETS}}logo.png" alt="Ateno">
+  <section id="ask">
+    <h1>{{T_TITLE}}</h1>
+    <p>{{T_LEAD}}</p>
+    <form id="form">
+      <input id="email" type="email" autocomplete="email" required placeholder="name@company.com" aria-label="Email">
+      <button id="send" type="submit">{{T_SEND}}</button>
+    </form>
+  </section>
+  <section id="sent" hidden>
+    <h1>{{T_SENT_TITLE}}</h1>
+    <p>{{T_SENT}} <b id="sentto"></b>.</p>
+    <p style="margin-top:12px">{{T_SPAM}}</p>
+  </section>
+  <section id="confirm" hidden>
+    <h1>{{T_CONFIRM_TITLE}}</h1>
+    <p>{{T_CONFIRM}}</p>
+    <form id="cform">
+      <input id="cemail" type="email" autocomplete="email" required placeholder="name@company.com" aria-label="Email">
+      <button type="submit">{{T_OPEN}}</button>
+    </form>
+  </section>
+  <section id="wait" hidden><p>{{T_LOADING}}</p></section>
+  <p class="msg" id="msg" role="status"></p>
+  <p class="small">{{T_FOOT}} · <a href="{{OTHER_HREF}}">{{OTHER_LABEL}}</a></p>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-app.js";
+import { getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-auth.js";
+import { getFirestore, doc, getDoc, addDoc, collection, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
+
+const LANG = "{{LANG}}";
+const app = initializeApp({{CONFIG}});
+const auth = getAuth(app), db = getFirestore(app);
+auth.languageCode = LANG;
+const $ = id => document.getElementById(id);
+const show = id => { for (const s of ["ask", "sent", "confirm", "wait"]) $(s).hidden = s !== id; };
+const say = (t, bad) => { $("msg").textContent = t || ""; $("msg").className = "msg" + (bad ? " bad" : ""); };
+const KEY = "ateno-pitch-email";
+const T = { sendFail: "{{T_SEND_FAIL}}", linkFail: "{{T_LINK_FAIL}}", noAccess: "{{T_NO_ACCESS}}" };
+
+// The address the link comes back to: this page, without the sign-in parameters.
+const here = () => location.origin + location.pathname;
+
+async function openDeck(user) {
+  show("wait"); say("");
+  let snap;
+  try { snap = await getDoc(doc(db, "decks", LANG)); }
+  catch (e) { show("ask"); say(T.noAccess, true); return; }
+  if (!snap.exists()) { show("ask"); say(T.noAccess, true); return; }
+  // who opened the deck: kept in Firestore → views (only visible in the console)
+  if (!new URLSearchParams(location.search).has("slides"))
+    addDoc(collection(db, "views"), { email: user.email, lang: LANG, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 399) }).catch(() => {});
+  const html = snap.data().html;
+  document.open(); document.write(html); document.close();
+}
+
+if (new URLSearchParams(location.search).has("logout")) {
+  await signOut(auth); history.replaceState(null, "", here());
+}
+
+if (isSignInWithEmailLink(auth, location.href)) {
+  const stored = localStorage.getItem(KEY);
+  const finish = async email => {
+    show("wait");
+    try {
+      const cred = await signInWithEmailLink(auth, email, location.href);
+      localStorage.removeItem(KEY);
+      history.replaceState(null, "", here());
+      await openDeck(cred.user);
+    } catch (e) { show("ask"); say(T.linkFail, true); history.replaceState(null, "", here()); }
+  };
+  if (stored) finish(stored);
+  else {
+    // link opened on another device or browser: ask which address it was sent to
+    show("confirm");
+    $("cform").addEventListener("submit", e => { e.preventDefault(); finish($("cemail").value.trim()); });
+  }
+} else {
+  let first = true;
+  onAuthStateChanged(auth, user => {
+    if (!first) return; first = false;
+    if (user && user.emailVerified) openDeck(user);
+    else show("ask");
+  });
+}
+
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("email").value.trim();
+  $("send").disabled = true; say("");
+  try {
+    await sendSignInLinkToEmail(auth, email, { url: here() + location.hash, handleCodeInApp: true });
+    localStorage.setItem(KEY, email);
+    $("sentto").textContent = email; show("sent");
+  } catch (err) { say(T.sendFail, true); }
+  $("send").disabled = false;
+});
+</script>
+</body>
+</html>

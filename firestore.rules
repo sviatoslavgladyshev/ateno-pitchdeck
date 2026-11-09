@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Signed in with an email whose ownership was proven (email link).
+    function verified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    // Deck HTML (slides + speaker notes). Written only by publish.py with admin credentials.
+    match /decks/{lang} {
+      allow read: if verified();
+    }
+    // One entry per opening of the deck: who looked and when. Readable only in the console.
+    match /views/{id} {
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['email', 'lang', 'at', 'ua'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.at == request.time
+        && request.resource.data.lang in ['en', 'ru']
+        && request.resource.data.ua is string && request.resource.data.ua.size() < 400;
+    }
+  }
+}

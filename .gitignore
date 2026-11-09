@@ -3,3 +3,7 @@ __pycache__/
 _thumb.html
 _export.html
 *.pdf
+site/
+.deck-token
+.firebase/
+firebase-debug.log
