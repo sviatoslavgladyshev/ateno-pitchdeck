@@ -7,6 +7,14 @@
 <title>{{TITLE}}</title>
 <link rel="icon" href="/static/favicon.png">
 <link rel="stylesheet" href="/static/gate.css">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
+<link rel="modulepreload" href="/static/app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/{{SDK}}/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/{{SDK}}/firebase-auth.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js">
 </head>
 <body>
 <main>
@@ -27,84 +35,99 @@
     <h1>{{T_BLOCKED_TITLE}}</h1>
     <p>{{T_BLOCKED}}</p>
   </section>
-  <section id="wait"><p>{{T_LOADING}}</p></section>
+  <section id="wait"><span class="spin big" aria-hidden="true"></span><p>{{T_LOADING}}</p></section>
   <p class="msg" id="msg" role="status"></p>
   <p class="small">{{T_FOOT}} · <a href="{{OTHER_HREF}}" id="other">{{OTHER_LABEL}}</a></p>
 </main>
 <script type="module">
 import { db, $, session, keyFor, hashParams } from "/static/app.js";
-import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp, runTransaction }
+import { doc, getDoc, setDoc, addDoc, updateDoc, collection, serverTimestamp, runTransaction, writeBatch, arrayUnion }
   from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
 
-const LANG = "{{LANG}}", LIMIT = 3;
+const LANG = "{{LANG}}", LIMIT = 3, ME = "ateno-pitch-me";
 const T = { noMatch: "{{T_NO_MATCH}}", used: "{{T_USED}}", error: "{{T_ERROR}}", shield: "{{T_SHIELD}}", strike: "{{T_STRIKE}}",
             blockedTitle: "{{T_BLOCKED_TITLE}}", blocked: "{{T_BLOCKED}}" };
 const show = id => { for (const s of ["confirm", "invite", "blocked", "wait"]) $(s).hidden = s !== id; };
 const say = (t, bad) => { $("msg").textContent = t || ""; $("msg").className = "msg" + (bad ? " bad" : ""); };
+const busy = on => { $("send").disabled = on; $("send").classList.toggle("loading", on); };
 
 // keep the invitation in the language switch
 const token = hashParams().get("i");
 if (token) $("other").href += `#i=${encodeURIComponent(token)}`;
 
-let user;
-try { user = await session(); } catch { show("invite"); say(T.error, true); throw new Error("no session"); }
-const isAdmin = (await getDoc(doc(db, "admins", user.uid)).catch(() => null))?.exists() || false;
+// The browser session starts in the background; the form is usable right away.
+const userP = session();
+let cached = null; try { cached = JSON.parse(localStorage.getItem(ME) || "null"); } catch {}
 
-if (token && !isAdmin) {
+if (token) {
   show("confirm"); $("email").focus();
   $("form").addEventListener("submit", e => { e.preventDefault(); claim($("email").value.trim().toLowerCase()); });
-} else await openDeck();
+  // while they type: open the connection to the database so the click only waits for the data
+  userP.then(u => getDoc(doc(db, "admins", u.uid))).catch(() => {});
+} else openDeck();
 
 // Confirm the email: the invitation is only found with the right token AND email; this browser is then added to it.
 async function claim(email) {
-  $("send").disabled = true; say("");
-  const id = await keyFor(token, email), ref = doc(db, "invites", id);
+  busy(true); say("");
   try {
-    const result = await runTransaction(db, async tx => {
-      const s = await tx.get(ref);
-      if (!s.exists()) return "nomatch";
-      const v = s.data();
-      if (!v.devices.includes(user.uid)) {
-        if (v.devices.length >= v.max) return "used";
-        tx.update(ref, { devices: [...v.devices, user.uid] });
-      }
-      tx.set(doc(db, "grants", user.uid), { inv: id, at: serverTimestamp() });
-      return "ok";
-    });
-    if (result === "nomatch") { say(T.noMatch, true); $("send").disabled = false; return; }
-    if (result === "used") { say(T.used, true); $("send").disabled = false; return; }
+    const [id, user] = await Promise.all([keyFor(token, email), userP]);
+    const ref = doc(db, "invites", id), grant = doc(db, "grants", user.uid);
+    // fast path: one write adds this browser and points it at the invitation
+    const b = writeBatch(db);
+    b.update(ref, { devices: arrayUnion(user.uid) });
+    b.set(grant, { inv: id, at: serverTimestamp() });
+    try { await b.commit(); }
+    catch (e) {
+      // why did it fail? wrong email, all devices used, or this browser is already on the invitation
+      const s = await getDoc(ref).catch(() => null);
+      if (!s?.exists()) { say(T.noMatch, true); busy(false); return; }
+      if (!s.data().devices.includes(user.uid)) { say(T.used, true); busy(false); return; }
+      await setDoc(grant, { inv: id, at: serverTimestamp() });
+    }
+    localStorage.setItem(ME, JSON.stringify({ uid: user.uid, inv: id, email }));
     history.replaceState(null, "", location.pathname);   // the token leaves the address bar
-    await openDeck();
-  } catch (e) { say(e.code === "permission-denied" ? T.used : T.error, true); $("send").disabled = false; }
+    await openDeck({ email, keepButton: true });
+  } catch (e) { say(T.error, true); busy(false); }
 }
 
 async function strikes(email) {
   try { const s = await getDoc(doc(db, "strikes", email)); return s.exists() ? s.data().count : 0; } catch { return 0; }
 }
 
-async function openDeck() {
-  show("wait");
-  let email = "admin";
-  if (!isAdmin) {
-    const g = await getDoc(doc(db, "grants", user.uid)).catch(() => null);
-    if (!g?.exists()) { show("invite"); return; }
-    const inv = await getDoc(doc(db, "invites", g.data().inv)).catch(() => null);
-    if (!inv?.exists()) { show("invite"); return; }
-    email = inv.data().email;
+// Everything that can run at the same time does: admin check, deck, screenshot count.
+async function openDeck(known = {}) {
+  if (!known.keepButton) show("wait");
+  let user;
+  try { user = await userP; } catch { show("invite"); say(T.error, true); return; }
+  let email = known.email || (cached?.uid === user.uid ? cached.email : null);
+  const adminP = getDoc(doc(db, "admins", user.uid)).then(s => s.exists(), () => false);
+  const deckP = getDoc(doc(db, "decks", LANG));
+  deckP.catch(() => {});
+  let usedP = email ? strikes(email) : null;
+
+  let snap, isAdmin = await adminP;
+  if (isAdmin) { email = "admin"; usedP = Promise.resolve(0); snap = await getDoc(doc(db, "decksFull", LANG)).catch(() => null); }
+  else {
+    snap = await deckP.catch(() => null);
+    if (!email || !snap) {
+      // no remembered invitation on this browser (or no access): look it up
+      const g = await getDoc(doc(db, "grants", user.uid)).catch(() => null);
+      const inv = g?.exists() ? await getDoc(doc(db, "invites", g.data().inv)).catch(() => null) : null;
+      if (inv?.exists()) { email = inv.data().email; localStorage.setItem(ME, JSON.stringify({ uid: user.uid, inv: inv.id, email })); usedP = strikes(email); }
+    }
   }
-  const usedP = isAdmin ? Promise.resolve(0) : strikes(email);
-  let snap;
-  try { snap = await getDoc(doc(db, isAdmin ? "decksFull" : "decks", LANG)); }
-  catch (e) {
-    if (await usedP >= LIMIT) { show("blocked"); return; }
-    show("invite"); return;     // removed, reset or black-listed
+  if (!snap) {
+    busy(false);
+    if (email && usedP && await usedP >= LIMIT) { show("blocked"); return; }
+    if (token) { say(T.error, true); return; }
+    show("invite"); return;     // not invited, removed, reset or black-listed
   }
   // a short code for this viewing, hidden in the slides; /admin/ shows which email and time it belongs to
   const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(6));
   const code = [...r].map(x => A[x % A.length]).join("");
   const viewP = isAdmin || new URLSearchParams(location.search).has("slides") ? Promise.resolve(null)
     : addDoc(collection(db, "views"), { email, uid: user.uid, lang: LANG, code, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 399) }).catch(() => null);
-  const used = await usedP;
+  const used = await (usedP || 0);
   if (!isAdmin) {
     localStorage.setItem("ateno-mode", "viewer");
     const q = new URLSearchParams(location.search);
