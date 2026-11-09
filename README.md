@@ -38,15 +38,16 @@ Pictures from the website (`place-*`, `map-*`, `device-main`) are in `deck_en/as
 
 Honesty labels ("Concept render", "Illustrative build-up") are part of the slides on purpose — keep them.
 
-## Private link with email sign-in (Firebase)
-The deck is published at **https://pitch.ateno.co** (Firebase project `ateno-pitch`, free Spark plan).
+## Private link with invitations (Firebase)
+The deck is published at **https://pitch.ateno.co** (Firebase project `ateno-pitch`, free Spark plan). The site sends no email.
 
-- **Invite only:** add someone at https://pitch.ateno.co/admin/, then send them their invite link (Copy invite link).
-  Addresses not on the list can't even get a sign-in email. Black list: single emails or whole domains (@company.com).
-- **Viewers** enter their email, get a one-time sign-in link and stay signed in on that browser. The link only works in the
-  browser that asked for it, so a forwarded email does not open the deck. Viewers get the deck without speaker notes and without presenter mode.
-- **Admin** (glsvyatoslav@gmail.com): https://pitch.ateno.co/admin/ — sign in there the same way. Access list, black list,
-  screenshot attempts (3 = blocked until you reset), and every visit with time spent on each slide.
-- **Copy protection:** an invisible view code on every slide (raise a screenshot's contrast to read it, then search it in admin), printing/PDF, saving, right-click and copying disabled,
-  the screen goes black on screenshot shortcuts. A phone camera can't be blocked; the watermark shows who leaked it.
+- **Admin:** run `python3 admin_link.py` once; it prints your personal admin link (also saved in `.admin-link`, not in git).
+  Open it, confirm glsvyatoslav@gmail.com, and that browser stays admin. `--revoke` cancels old admin links.
+- **Invite someone:** admin page → enter their email, pick 1–3 devices → *Create link* → paste the link into your own email to them.
+  They open it, confirm their email, and see the deck. On those devices they can come back any time without the link.
+- **Forwarding:** the link only works with the invited email and on at most the chosen number of devices.
+  *Reset devices* moves access to new devices; *Remove* ends it; *Block* also black-lists the email. Whole domains can be black-listed.
+- **Viewers** get no speaker notes, no presenter mode or phone remote. Printing/PDF, saving and copying are off; 3 screenshot attempts block access until you reset it.
+- **Visits:** every opening with device, total time and seconds per slide. Each visit hides a code in the slides
+  (invisible; raise a leaked screenshot's contrast to read it, then search it in admin). A phone camera can't be blocked.
 - **Publish after a rebuild:** `python3 publish.py` (needs `firebase` and `gcloud` logged in). Details at the top of `publish.py`.

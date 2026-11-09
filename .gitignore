@@ -7,3 +7,4 @@ site/
 .deck-token
 .firebase/
 firebase-debug.log
+.admin-link

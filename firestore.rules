@@ -1,57 +1,70 @@
 rules_version = '2';
+// Access model (no emails sent by the site):
+// - The admin creates invites/<sha256(token:email)> and sends the link https://pitch.ateno.co/en/#i=<token>.
+// - The visitor (an anonymous Firebase session = one browser) confirms the email; that finds the invite.
+//   The browser adds itself to invite.devices (at most invite.max) and writes grants/<uid> pointing to the invite.
+// - The deck is readable only while that browser is still in the invite's devices, the email is not on the
+//   black list and has fewer than 3 screenshot attempts. Admin browsers are listed in admins/<uid>.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Signed in with an email whose ownership was proven (email link).
-    function verified() {
-      return request.auth != null && request.auth.token.email_verified == true;
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function hasGrant() { return signedIn() && exists(/databases/$(database)/documents/grants/$(request.auth.uid)); }
+    function grant() { return get(/databases/$(database)/documents/grants/$(request.auth.uid)).data; }
+    function invite() { return get(/databases/$(database)/documents/invites/$(grant().inv)).data; }
+    function myEmail() { return invite().email; }
+    function denied(e) {
+      return exists(/databases/$(database)/documents/deny/$(e))
+        || exists(/databases/$(database)/documents/deny/$('@' + e.split('@')[1]));
     }
-    function me() { return request.auth.token.email.lower(); }
-    function isAdmin() { return verified() && me() == 'glsvyatoslav@gmail.com'; }
-    // Black list (deny/<email> or deny/@domain.com): never allowed, can't even leave a request.
-    function denied() {
-      return exists(/databases/$(database)/documents/deny/$(me()))
-        || exists(/databases/$(database)/documents/deny/$('@' + me().split('@')[1]));
+    function notBlocked(e) {
+      return !exists(/databases/$(database)/documents/strikes/$(e))
+        || get(/databases/$(database)/documents/strikes/$(e)).data.count < 3;
     }
-    function strikesDoc() { return /databases/$(database)/documents/strikes/$(me()); }
-    function notBlocked() { return !exists(strikesDoc()) || get(strikesDoc()).data.count < 3; }
-    // On the access list kept by the admin (allow/<email>) and not blocked for screenshots, or the admin.
-    function allowed() {
-      return verified() && (isAdmin() || (exists(/databases/$(database)/documents/allow/$(me())) && notBlocked() && !denied()));
-    }
-
-    // Deck HTML for viewers (slides, no speaker notes). Written only by publish.py with admin credentials.
-    match /decks/{lang} {
-      allow read: if allowed();
-    }
-    // The same deck with speaker notes: admin only.
-    match /decksFull/{lang} {
-      allow read: if isAdmin();
+    function viewer() {
+      return hasGrant()
+        && exists(/databases/$(database)/documents/invites/$(grant().inv))
+        && request.auth.uid in invite().devices
+        && !denied(myEmail()) && notBlocked(myEmail());
     }
 
-    // Screenshot / print attempts, counted by the viewer page. At 3 the deck stops opening;
-    // only the admin can reset (delete) the count.
-    match /strikes/{email} {
-      allow get: if verified() && email == me();
-      allow read, delete: if isAdmin();
-      allow create: if verified() && email == me()
-        && request.resource.data.keys().hasOnly(['email', 'count', 'at', 'kind'])
-        && request.resource.data.email == me() && request.resource.data.count == 1
-        && request.resource.data.at == request.time && request.resource.data.kind is string;
-      allow update: if verified() && email == me()
-        && request.resource.data.keys().hasOnly(['email', 'count', 'at', 'kind'])
-        && request.resource.data.email == me() && request.resource.data.count == resource.data.count + 1
-        && request.resource.data.at == request.time && request.resource.data.kind is string;
+    // Deck for viewers (no speaker notes) and the full one for the admin. Written only by publish.py.
+    match /decks/{lang}     { allow read: if isAdmin() || viewer(); }
+    match /decksFull/{lang} { allow read: if isAdmin(); }
+
+    // Admin browsers. A browser becomes admin by proving it knows an admin key (adminKeys/<sha256(token:email)>,
+    // created by admin_link.py; nobody can read that collection).
+    match /admins/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, delete: if isAdmin();
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['key', 'at'])
+        && request.resource.data.at == request.time
+        && exists(/databases/$(database)/documents/adminKeys/$(request.resource.data.key));
     }
 
-    // Access list: managed from /admin/.
-    match /allow/{email} {
-      allow read, delete: if isAdmin();
-      allow create, update: if isAdmin()
-        && request.resource.data.keys().hasOnly(['email', 'note', 'addedAt'])
-        && request.resource.data.email == email
-        && request.resource.data.note is string && request.resource.data.note.size() < 200;
+    match /invites/{id} {
+      // anyone who knows the id (= has the link and the right email) may read it and add this browser
+      allow get: if signedIn();
+      allow list, create, delete: if isAdmin();
+      allow update: if isAdmin() || (signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devices'])
+        && !(request.auth.uid in resource.data.devices)
+        && resource.data.devices.size() < resource.data.max
+        && request.resource.data.devices == resource.data.devices.concat([request.auth.uid])
+        && !denied(resource.data.email));
     }
 
+    match /grants/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, delete: if isAdmin();
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['inv', 'at'])
+        && request.resource.data.at == request.time
+        && request.auth.uid in getAfter(/databases/$(database)/documents/invites/$(request.resource.data.inv)).data.devices;
+    }
+
+    // Black list: emails or @domains. Admin only.
     match /deny/{entry} {
       allow read, delete: if isAdmin();
       allow create, update: if isAdmin()
@@ -59,28 +72,35 @@ service cloud.firestore {
         && request.resource.data.entry == entry;
     }
 
-    // "Is this one address invited?" for the sign-in form: id = sha256(email), no data, cannot be listed.
-    match /invited/{hash} {
-      allow get: if true;
-      allow delete: if isAdmin();
-      allow create, update: if isAdmin() && request.resource.data.size() == 0;
+    // Screenshot / print attempts, counted by the viewer page. At 3 the deck stops opening.
+    match /strikes/{email} {
+      allow get: if hasGrant() && email == myEmail();
+      allow read, delete: if isAdmin();
+      allow create: if hasGrant() && email == myEmail()
+        && request.resource.data.keys().hasOnly(['email', 'count', 'at', 'kind'])
+        && request.resource.data.email == email && request.resource.data.count == 1
+        && request.resource.data.at == request.time && request.resource.data.kind is string;
+      allow update: if hasGrant() && email == myEmail()
+        && request.resource.data.keys().hasOnly(['email', 'count', 'at', 'kind'])
+        && request.resource.data.email == email && request.resource.data.count == resource.data.count + 1
+        && request.resource.data.at == request.time && request.resource.data.kind is string;
     }
 
     // One entry per opening of the deck; the page then adds what was seen (seconds per slide).
     match /views/{id} {
       allow read, delete: if isAdmin();
-      allow update: if verified() && resource.data.email == me()
+      allow create: if viewer()
+        && request.resource.data.keys().hasOnly(['email', 'uid', 'lang', 'at', 'ua', 'code'])
+        && request.resource.data.email == myEmail() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.code is string && request.resource.data.code.size() == 6
+        && request.resource.data.at == request.time
+        && request.resource.data.lang in ['en', 'ru']
+        && request.resource.data.ua is string && request.resource.data.ua.size() < 400;
+      allow update: if signedIn() && resource.data.uid == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slides', 'seen', 'dur', 'last'])
         && request.resource.data.slides is map && request.resource.data.slides.size() <= 60
         && request.resource.data.seen is int && request.resource.data.dur is int
         && request.resource.data.last == request.time;
-      allow create: if allowed()
-        && request.resource.data.keys().hasOnly(['email', 'lang', 'at', 'ua', 'code'])
-        && request.resource.data.code is string && request.resource.data.code.size() == 6
-        && request.resource.data.email == me()
-        && request.resource.data.at == request.time
-        && request.resource.data.lang in ['en', 'ru']
-        && request.resource.data.ua is string && request.resource.data.ua.size() < 400;
     }
   }
 }

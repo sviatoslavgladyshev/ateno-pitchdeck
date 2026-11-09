@@ -11,23 +11,17 @@
 <body>
 <main>
   <img class="logo" src="/static/logo.png" alt="Ateno">
-  <section id="ask" hidden>
-    <h1>{{T_TITLE}}</h1>
-    <p>{{T_LEAD}}</p>
+  <section id="confirm" hidden>
+    <h1>{{T_CONFIRM_TITLE}}</h1>
+    <p>{{T_CONFIRM}}</p>
     <form id="form">
       <input id="email" type="email" autocomplete="email" required placeholder="name@company.com" aria-label="Email">
-      <button id="send" type="submit">{{T_SEND}}</button>
+      <button id="send" type="submit">{{T_OPEN}}</button>
     </form>
   </section>
-  <section id="sent" hidden>
-    <h1>{{T_SENT_TITLE}}</h1>
-    <p>{{T_SENT}} <b id="sentto"></b>.</p>
-    <p class="gap">{{T_SPAM}}</p>
-  </section>
-  <section id="denied" hidden>
-    <h1>{{T_DENIED_TITLE}}</h1>
-    <p>{{T_DENIED}}</p>
-    <p class="gap"><b id="who"></b></p>
+  <section id="invite" hidden>
+    <h1>{{T_INVITE_TITLE}}</h1>
+    <p>{{T_INVITE}}</p>
   </section>
   <section id="blocked" hidden>
     <h1>{{T_BLOCKED_TITLE}}</h1>
@@ -35,70 +29,89 @@
   </section>
   <section id="wait"><p>{{T_LOADING}}</p></section>
   <p class="msg" id="msg" role="status"></p>
-  <p class="small">{{T_FOOT}} · <a href="{{OTHER_HREF}}">{{OTHER_LABEL}}</a><span id="outwrap" hidden> · <a href="#" id="out">{{T_SIGNOUT}}</a></span></p>
+  <p class="small">{{T_FOOT}} · <a href="{{OTHER_HREF}}" id="other">{{OTHER_LABEL}}</a></p>
 </main>
 <script type="module">
-import { auth, db, $, sendLink, isInvited, currentUser, logout, ADMIN } from "/static/app.js";
-import { doc, getDoc, setDoc, addDoc, updateDoc, collection, serverTimestamp, runTransaction }
+import { db, $, session, keyFor, hashParams } from "/static/app.js";
+import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp, runTransaction }
   from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
 
 const LANG = "{{LANG}}", LIMIT = 3;
-const T = { notInvited: "{{T_NOT_INVITED}}", sendFail: "{{T_SEND_FAIL}}", error: "{{T_ERROR}}", shield: "{{T_SHIELD}}", strike: "{{T_STRIKE}}",
+const T = { noMatch: "{{T_NO_MATCH}}", used: "{{T_USED}}", error: "{{T_ERROR}}", shield: "{{T_SHIELD}}", strike: "{{T_STRIKE}}",
             blockedTitle: "{{T_BLOCKED_TITLE}}", blocked: "{{T_BLOCKED}}" };
-const SECTIONS = ["ask", "sent", "denied", "blocked", "wait"];
-const show = id => { for (const s of SECTIONS) $(s).hidden = s !== id; };
+const show = id => { for (const s of ["confirm", "invite", "blocked", "wait"]) $(s).hidden = s !== id; };
 const say = (t, bad) => { $("msg").textContent = t || ""; $("msg").className = "msg" + (bad ? " bad" : ""); };
 
-$("out").addEventListener("click", async e => { e.preventDefault(); await logout(); location.reload(); });
+// keep the invitation in the language switch
+const token = hashParams().get("i");
+if (token) $("other").href += `#i=${encodeURIComponent(token)}`;
 
-$("form").addEventListener("submit", async e => {
-  e.preventDefault();
-  const email = $("email").value.trim().toLowerCase();
+let user;
+try { user = await session(); } catch { show("invite"); say(T.error, true); throw new Error("no session"); }
+const isAdmin = (await getDoc(doc(db, "admins", user.uid)).catch(() => null))?.exists() || false;
+
+if (token && !isAdmin) {
+  show("confirm"); $("email").focus();
+  $("form").addEventListener("submit", e => { e.preventDefault(); claim($("email").value.trim().toLowerCase()); });
+} else await openDeck();
+
+// Confirm the email: the invitation is only found with the right token AND email; this browser is then added to it.
+async function claim(email) {
   $("send").disabled = true; say("");
-  // not on the admin's list: no email is sent at all
-  if (!(await isInvited(email))) { say(T.notInvited, true); $("send").disabled = false; return; }
-  try { await sendLink(email, LANG); localStorage.setItem("ateno-pitch-last", email); $("sentto").textContent = email; show("sent"); }
-  catch (err) { say(T.sendFail, true); }
-  $("send").disabled = false;
-});
-
-const pre = new URLSearchParams(location.search).get("e") || localStorage.getItem("ateno-pitch-last") || "";
-if (pre) $("email").value = pre;
-const user = await currentUser();
-if (!user || !user.emailVerified) { show("ask"); if (pre) $("send").focus(); }
-else await openDeck(user);
+  const id = await keyFor(token, email), ref = doc(db, "invites", id);
+  try {
+    const result = await runTransaction(db, async tx => {
+      const s = await tx.get(ref);
+      if (!s.exists()) return "nomatch";
+      const v = s.data();
+      if (!v.devices.includes(user.uid)) {
+        if (v.devices.length >= v.max) return "used";
+        tx.update(ref, { devices: [...v.devices, user.uid] });
+      }
+      tx.set(doc(db, "grants", user.uid), { inv: id, at: serverTimestamp() });
+      return "ok";
+    });
+    if (result === "nomatch") { say(T.noMatch, true); $("send").disabled = false; return; }
+    if (result === "used") { say(T.used, true); $("send").disabled = false; return; }
+    history.replaceState(null, "", location.pathname);   // the token leaves the address bar
+    await openDeck();
+  } catch (e) { say(e.code === "permission-denied" ? T.used : T.error, true); $("send").disabled = false; }
+}
 
 async function strikes(email) {
   try { const s = await getDoc(doc(db, "strikes", email)); return s.exists() ? s.data().count : 0; } catch { return 0; }
 }
 
-async function openDeck(user) {
-  const email = user.email.toLowerCase(), admin = email === ADMIN;
-  // deck and screenshot count load together
-  const usedP = admin ? Promise.resolve(0) : strikes(email);
+async function openDeck() {
+  show("wait");
+  let email = "admin";
+  if (!isAdmin) {
+    const g = await getDoc(doc(db, "grants", user.uid)).catch(() => null);
+    if (!g?.exists()) { show("invite"); return; }
+    const inv = await getDoc(doc(db, "invites", g.data().inv)).catch(() => null);
+    if (!inv?.exists()) { show("invite"); return; }
+    email = inv.data().email;
+  }
+  const usedP = isAdmin ? Promise.resolve(0) : strikes(email);
   let snap;
-  try { snap = await getDoc(doc(db, admin ? "decksFull" : "decks", LANG)); }
+  try { snap = await getDoc(doc(db, isAdmin ? "decksFull" : "decks", LANG)); }
   catch (e) {
-    if (e.code !== "permission-denied") { show("ask"); say(T.error, true); return; }
-    $("outwrap").hidden = false;
     if (await usedP >= LIMIT) { show("blocked"); return; }
-    // signed in, but not (or no longer) on the list
-    $("who").textContent = email; show("denied"); return;
+    show("invite"); return;     // removed, reset or black-listed
   }
   // a short code for this viewing, hidden in the slides; /admin/ shows which email and time it belongs to
   const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(6));
   const code = [...r].map(x => A[x % A.length]).join("");
-  // the log entry is written in the background; slide tracking starts once it exists
-  const viewP = new URLSearchParams(location.search).has("slides") ? Promise.resolve(null)
-    : addDoc(collection(db, "views"), { email, lang: LANG, code, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 399) }).catch(() => null);
+  const viewP = isAdmin || new URLSearchParams(location.search).has("slides") ? Promise.resolve(null)
+    : addDoc(collection(db, "views"), { email, uid: user.uid, lang: LANG, code, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 399) }).catch(() => null);
   const used = await usedP;
-  if (!admin) {
+  if (!isAdmin) {
     localStorage.setItem("ateno-mode", "viewer");
     const q = new URLSearchParams(location.search);
-    if (q.has("slides") || q.has("e")) { q.delete("slides"); q.delete("e"); history.replaceState(null, "", location.pathname + (q.size ? "?" + q : "") + location.hash); }
+    if (q.has("slides")) { q.delete("slides"); history.replaceState(null, "", location.pathname + (q.size ? "?" + q : "") + location.hash); }
   }
   document.open(); document.write(snap.data().html); document.close();
-  guard(email, code, admin, used);
+  guard(email, code, isAdmin, used);
   viewP.then(ref => ref && track(ref));
 }
 

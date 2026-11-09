@@ -31,27 +31,23 @@ HOST = "pitch.ateno.co"
 ADMIN = "glsvyatoslav@gmail.com"   # also hard-coded in firestore.rules
 
 TEXT = {
-    "en": dict(TITLE="Ateno — Pitch Deck", T_TITLE="Ateno pitch deck",
-               T_LEAD="Enter your email. We'll send you a sign-in link.",
-               T_SEND="Send link", T_SENT_TITLE="Check your inbox", T_SENT="We sent a sign-in link to",
-               T_SPAM="It can take a minute. If you don't see it, check spam.",
-               T_LOADING="Opening the deck…", T_FOOT="Confidential", T_SIGNOUT="Sign out",
-               T_DENIED_TITLE="No access", T_DENIED="This deck is shared by invitation only, and this email is not on the list.",
-               T_NOT_INVITED="This email doesn't have access to the deck. Use the address Ateno invited.",
-               T_SEND_FAIL="Couldn't send the link. Check the address and try again.",
-               T_ERROR="Couldn't open the deck. Try again in a moment.",
+    "en": dict(TITLE="Ateno — Pitch Deck",
+               T_CONFIRM_TITLE="Confirm your email", T_CONFIRM="Enter the email address this invitation was sent to.",
+               T_OPEN="Open the deck", T_LOADING="Opening the deck…", T_FOOT="Confidential",
+               T_INVITE_TITLE="Invitation only", T_INVITE="This deck is shared by personal invitation. Open the link from your invitation email.",
+               T_NO_MATCH="This email doesn't match the invitation.",
+               T_USED="This invitation is already in use on other devices. Ask Ateno to reset it.",
+               T_ERROR="Something went wrong. Try again in a moment.",
                T_SHIELD="Screenshots, printing and saving are not allowed", T_STRIKE="Attempt {n} of {max}. At {max}, access to the deck is blocked.",
                T_BLOCKED_TITLE="Access blocked", T_BLOCKED="Too many screenshot or print attempts. Contact Ateno to restore access.",
                OTHER_HREF="/ru/", OTHER_LABEL="Русский"),
-    "ru": dict(TITLE="Ateno — питч-дек", T_TITLE="Питч-дек Ateno",
-               T_LEAD="Введите email. Мы пришлём ссылку для входа.",
-               T_SEND="Получить ссылку", T_SENT_TITLE="Проверьте почту", T_SENT="Мы отправили ссылку для входа на",
-               T_SPAM="Письмо может прийти через минуту. Если его нет, проверьте спам.",
-               T_LOADING="Открываем дек…", T_FOOT="Конфиденциально", T_SIGNOUT="Выйти",
-               T_DENIED_TITLE="Нет доступа", T_DENIED="Дек доступен только по приглашению, а этого email нет в списке.",
-               T_NOT_INVITED="У этого email нет доступа к деку. Используйте адрес, на который пришло приглашение.",
-               T_SEND_FAIL="Не удалось отправить ссылку. Проверьте адрес и попробуйте ещё раз.",
-               T_ERROR="Не удалось открыть дек. Попробуйте чуть позже.",
+    "ru": dict(TITLE="Ateno — питч-дек",
+               T_CONFIRM_TITLE="Подтвердите email", T_CONFIRM="Введите адрес, на который пришло приглашение.",
+               T_OPEN="Открыть дек", T_LOADING="Открываем дек…", T_FOOT="Конфиденциально",
+               T_INVITE_TITLE="Только по приглашению", T_INVITE="Дек открывается по личному приглашению. Откройте ссылку из письма с приглашением.",
+               T_NO_MATCH="Этот email не совпадает с приглашением.",
+               T_USED="Это приглашение уже используется на других устройствах. Попросите Ateno сбросить его.",
+               T_ERROR="Что-то пошло не так. Попробуйте чуть позже.",
                T_SHIELD="Скриншоты, печать и сохранение запрещены", T_STRIKE="Попытка {n} из {max}. После {max} доступ к деку будет заблокирован.",
                T_BLOCKED_TITLE="Доступ заблокирован", T_BLOCKED="Слишком много попыток скриншота или печати. Чтобы восстановить доступ, свяжитесь с Ateno.",
                OTHER_HREF="/en/", OTHER_LABEL="English"),
@@ -67,11 +63,10 @@ def fill(text, values):
 
 
 def auth_settings(access):
-    """HOST may sign in, and email links sign in without a password."""
-    # (the link itself still goes through Firebase's page, which forwards to /auth/; Firebase does not let the API change it)
-    url = f"https://identitytoolkit.googleapis.com/admin/v2/projects/{PROJECT}/config?updateMask=authorizedDomains,signIn.email"
+    """Visitors get an anonymous Firebase session (one per browser); the site never sends email."""
+    url = f"https://identitytoolkit.googleapis.com/admin/v2/projects/{PROJECT}/config?updateMask=authorizedDomains,signIn.anonymous,signIn.email"
     body = {"authorizedDomains": [f"{PROJECT}.firebaseapp.com", f"{PROJECT}.web.app", HOST],
-            "signIn": {"email": {"enabled": True, "passwordRequired": False}}}
+            "signIn": {"anonymous": {"enabled": True}, "email": {"enabled": False}}}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), method="PATCH",
                                  headers={"Authorization": f"Bearer {access}", "Content-Type": "application/json",
                                           "x-goog-user-project": PROJECT})
@@ -134,7 +129,7 @@ def main():
         shutil.copy(ROOT / "deck_en/assets" / f, site / "static" / f)
     shutil.copy(ROOT / "gate/gate.css", site / "static/gate.css")
     (site / "static/app.js").write_text(fill((ROOT / "gate/app.js").read_text(encoding="utf-8"), COMMON), encoding="utf-8")
-    for page in ("auth", "admin"):
+    for page in ("admin",):
         (site / page).mkdir()
         (site / page / "index.html").write_text(fill((ROOT / f"gate/{page}.html").read_text(encoding="utf-8"), COMMON), encoding="utf-8")
     (site / "404.html").write_text("<!DOCTYPE html><meta charset=utf-8><title>Not found</title><meta http-equiv=refresh content=\"0;url=/en/\">")

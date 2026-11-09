@@ -9,13 +9,14 @@
 <link rel="stylesheet" href="/static/gate.css">
 <style>
 body{place-items:start center}
-main.wide{width:min(860px,100%);text-align:left;padding-top:24px}
+main.wide{width:min(920px,100%);text-align:left;padding-top:24px}
 .top{display:flex;align-items:center;gap:16px;margin-bottom:8px}
 .top img{width:40px;margin:0}
 .top h1{margin:0;font-size:28px;flex:1}
 .top a{color:#a1a1a6;font-size:14px}
 .row{display:flex;flex-direction:row;gap:10px;margin-top:16px}
 .row input{flex:1}
+.row select{all:unset;box-sizing:border-box;padding:0 14px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);font-size:15px;color:#f5f5f7;cursor:pointer}
 .row button{width:auto;padding:13px 22px}
 table{width:100%;border-collapse:collapse;font-size:15px}
 td,th{padding:11px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:middle}
@@ -27,6 +28,8 @@ td.act{text-align:right;white-space:nowrap}
 .mini.danger:hover{background:#ff453a;color:#fff}
 .empty{color:#6e6e73;font-size:14px;padding:12px 8px}
 .count{color:#6e6e73;font-weight:400}
+.newlink{margin-top:14px;padding:14px 16px;border-radius:12px;background:rgba(165,147,245,.12);border:1px solid rgba(165,147,245,.35);font-size:14px;color:#d2d2d7;word-break:break-all}
+.newlink b{display:block;margin-bottom:6px;color:#f5f5f7}
 tr.v{cursor:pointer}
 tr.v:hover td{background:rgba(255,255,255,.03)}
 tr.detail td{padding:6px 8px 18px}
@@ -39,76 +42,85 @@ tr.detail td{padding:6px 8px 18px}
 <body>
 <main id="login">
   <img class="logo" src="/static/logo.png" alt="Ateno">
-  <section id="ask" hidden>
+  <section id="confirm" hidden>
     <h1>Deck admin</h1>
-    <p>Sign in with the admin email.</p>
+    <p>Confirm your admin email to use this browser as admin.</p>
     <form id="form">
-      <input id="email" type="email" autocomplete="email" required placeholder="you@example.com" aria-label="Email">
-      <button id="send" type="submit">Send sign-in link</button>
+      <input id="email" type="email" autocomplete="email" required placeholder="you@example.com" aria-label="Admin email">
+      <button id="send" type="submit">Continue</button>
     </form>
   </section>
-  <section id="sent" hidden><h1>Check your inbox</h1><p>We sent a sign-in link to <b id="sentto"></b>. If you don't see it, check spam.</p></section>
-  <section id="notadmin" hidden><h1>Not an admin</h1><p><b id="who"></b> can't manage the deck.</p><p class="small"><a href="#" class="out">Sign out</a></p></section>
+  <section id="nope" hidden><h1>Admin only</h1><p>Open your personal admin link on this browser.</p></section>
   <section id="wait"><p>Loading…</p></section>
   <p class="msg" id="msg" role="status"></p>
 </main>
 
 <main id="panel" class="wide" hidden>
   <div class="top"><img src="/static/logo.png" alt=""><h1>Deck access</h1>
-    <a href="/en/" target="_blank">Open EN</a><a href="/ru/" target="_blank">Open RU</a><a href="#" class="out">Sign out</a></div>
-  <p>Only the people listed here can open the deck at <b id="host"></b>; anyone else can't even get a sign-in email. You always can.
-  Add someone, then send them their invite link. Sign-in links only open in the browser that asked for them, so forwarding doesn't work.</p>
-  <p class="msg" id="pmsg" role="status"></p>
+    <a href="/en/" target="_blank">Open EN</a><a href="/ru/" target="_blank">Open RU</a><a href="#" id="out">Sign out this browser</a></div>
+  <p>Only people you invite can open the deck at <b id="host"></b>. Create an invitation, then send the link in your own email.
+     The person confirms their email and the deck opens. Each invitation works on at most the number of devices you choose,
+     so a forwarded link stops at the limit.</p>
+
+  <h2>Invitations <span class="count" id="ninv"></span></h2>
+  <form class="row" id="add" style="margin-top:0">
+    <input id="newemail" type="email" required placeholder="investor@fund.com" aria-label="Email to invite">
+    <input id="newnote" placeholder="Note (optional)" aria-label="Note">
+    <select id="newmax" aria-label="Devices"><option value="1">1 device</option><option value="2" selected>2 devices</option><option value="3">3 devices</option></select>
+    <button type="submit">Create link</button>
+  </form>
+  <div id="newlink" class="newlink" hidden></div>
+  <table><thead><tr><th>Email</th><th>Note</th><th>Devices</th><th>Created</th><th></th></tr></thead><tbody id="invites"></tbody></table>
 
   <h2>Screenshot attempts <span class="count" id="nstrikes"></span></h2>
   <p>At 3 attempts the deck stops opening for that person. Reset to give access back.</p>
   <table><tbody id="strikes"></tbody></table>
 
-  <h2>Can view <span class="count" id="nallow"></span></h2>
-  <form class="row" id="add" style="margin-top:0">
-    <input id="newemail" type="email" required placeholder="investor@fund.com" aria-label="Email to add">
-    <input id="newnote" placeholder="Note (optional)" aria-label="Note">
-    <button type="submit">Add</button>
-  </form>
-  <table><thead><tr><th>Email</th><th>Note</th><th>Added</th><th></th></tr></thead><tbody id="allow"></tbody></table>
-
   <h2>Black list <span class="count" id="ndeny"></span></h2>
-  <p>These people never see the deck, even if they are on the list above. Use an email or a whole domain, e.g. <b>@competitor.com</b>.</p>
+  <p>These people never see the deck, even with an invitation. Use an email or a whole domain, e.g. <b>@competitor.com</b>.</p>
   <form class="row" id="adddeny" style="margin-top:12px">
     <input id="denyentry" required placeholder="name@company.com or @company.com" aria-label="Email or domain to block">
     <button type="submit">Block</button>
   </form>
   <table><tbody id="deny"></tbody></table>
 
-  <h2>Recent views</h2>
-  <p>Each opening hides its code in the slides, invisible on screen. Found a leaked screenshot? Raise its contrast to read the code, then search it here.</p>
-  <form class="row" id="find" style="margin-top:12px"><input id="code" placeholder="Code or email" aria-label="Search views" autocomplete="off"></form>
+  <h2>Visits</h2>
+  <p>Click a visit to see the time spent on each slide. Each visit hides its code in the slides, invisible on screen:
+     raise the contrast of a leaked screenshot to read it, then search it here.</p>
+  <form class="row" id="find" style="margin-top:12px"><input id="code" placeholder="Code or email" aria-label="Search visits" autocomplete="off"></form>
   <table><thead><tr><th>Email</th><th>Code</th><th>Deck</th><th>Opened</th><th>Time</th><th>Slides</th><th>Device</th></tr></thead><tbody id="views"></tbody></table>
-  <p class="small">Removing someone stops them opening the deck again; a tab they already have open stays open until they close it.</p>
+  <p class="small">Removing an invitation or resetting its devices stops the deck from opening again; a tab already open stays open until it is closed.</p>
 </main>
 
 <script type="module">
-import { auth, db, $, sendLink, currentUser, logout, sha256, ADMIN, HOST } from "/static/app.js";
-import { collection, doc, getDoc, setDoc, deleteDoc, writeBatch, onSnapshot, query, orderBy, limit, serverTimestamp }
+import { db, $, session, keyFor, randomToken, hashParams, HOST } from "/static/app.js";
+import { collection, doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, orderBy, limit, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
 
-const show = id => { for (const s of ["ask", "sent", "notadmin", "wait"]) $(s).hidden = s !== id; };
+const show = id => { for (const s of ["confirm", "nope", "wait"]) $(s).hidden = s !== id; };
 const say = (t, bad) => { $("msg").textContent = t || ""; $("msg").className = "msg" + (bad ? " bad" : ""); };
-document.querySelectorAll(".out").forEach(a => a.addEventListener("click", async e => { e.preventDefault(); await logout(); location.reload(); }));
 
-$("form").addEventListener("submit", async e => {
+const user = await session();
+const key = hashParams().get("k");
+const isAdmin = async () => (await getDoc(doc(db, "admins", user.uid)).catch(() => null))?.exists();
+
+if (await isAdmin()) { history.replaceState(null, "", location.pathname); panel(); }
+else if (key) {
+  show("confirm"); $("email").focus();
+  $("form").addEventListener("submit", async e => {
+    e.preventDefault(); $("send").disabled = true; say("");
+    try {
+      await setDoc(doc(db, "admins", user.uid), { key: await keyFor(key, $("email").value), at: serverTimestamp() });
+      history.replaceState(null, "", location.pathname); panel();
+    } catch { say("This link and email don't match an admin key.", true); $("send").disabled = false; }
+  });
+} else show("nope");
+
+$("out").addEventListener("click", async e => {
   e.preventDefault();
-  const email = $("email").value.trim().toLowerCase();
-  $("send").disabled = true; say("");
-  try { await sendLink(email, "en"); $("sentto").textContent = email; show("sent"); }
-  catch { say("Couldn't send the link. Check the address and try again.", true); }
-  $("send").disabled = false;
+  if (!confirm("Sign out this browser? You'll need your admin link to come back.")) return;
+  await deleteDoc(doc(db, "admins", user.uid)); location.reload();
 });
-
-const user = await currentUser();
-if (!user || !user.emailVerified) show("ask");
-else if (user.email.toLowerCase() !== ADMIN) { $("who").textContent = user.email; show("notadmin"); }
-else panel();
 
 const when = t => t ? t.toDate().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "…";
 const device = ua => /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Other";
@@ -116,58 +128,55 @@ function cell(text, cls) { const td = document.createElement("td"); td.textConte
 function btn(label, cls, fn) { const b = document.createElement("button"); b.className = "mini " + cls; b.textContent = label; b.onclick = fn; return b; }
 function empty(tb, text, cols) { const tr = document.createElement("tr"); const td = cell(text, "empty"); td.colSpan = cols; tr.append(td); tb.replaceChildren(tr); }
 
-// invite link: opens the deck page with the email already filled in
-const invite = email => `https://${HOST}/en/?e=${encodeURIComponent(email)}`;
-async function copyInvite(email, button) {
-  try { await navigator.clipboard.writeText(invite(email)); const t = button.textContent; button.textContent = "Copied"; setTimeout(() => (button.textContent = t), 1500); }
-  catch { prompt("Invite link:", invite(email)); }
+const link = (token, lang = "en") => `https://${HOST}/${lang}/#i=${token}`;
+async function copy(text, button) {
+  try { await navigator.clipboard.writeText(text); const t = button.textContent; button.textContent = "Copied"; setTimeout(() => (button.textContent = t), 1500); }
+  catch { prompt("Copy this link:", text); }
 }
+
 async function block(entry, note = "") {
   entry = entry.trim().toLowerCase();
   if (!/^(@|[^@\s]+@)[^@\s]+\.[^@\s]+$/.test(entry)) return alert("Enter an email or a domain like @company.com");
-  const b = writeBatch(db);
-  b.set(doc(db, "deny", entry), { entry, note, addedAt: serverTimestamp() });
-  if (!entry.startsWith("@")) { b.delete(doc(db, "allow", entry)); b.delete(doc(db, "invited", await sha256(entry))); }
-  await b.commit();
-}
-
-async function allow(email, note = "") {
-  email = email.trim().toLowerCase();
-  const b = writeBatch(db);
-  b.set(doc(db, "allow", email), { email, note, addedAt: serverTimestamp() });
-  b.set(doc(db, "invited", await sha256(email)), {});
-  await b.commit();
-}
-async function removeAccess(email) {
-  const b = writeBatch(db);
-  b.delete(doc(db, "allow", email)); b.delete(doc(db, "invited", await sha256(email)));
-  await b.commit();
+  await setDoc(doc(db, "deny", entry), { entry, note, addedAt: serverTimestamp() });
 }
 
 function panel() {
   $("login").hidden = true; $("panel").hidden = false; $("host").textContent = HOST;
 
+  // ---------- invitations ----------
   $("add").addEventListener("submit", async e => {
     e.preventDefault();
-    const email = $("newemail").value.trim().toLowerCase();
-    try { await allow(email, $("newnote").value.trim()); $("newemail").value = ""; $("newnote").value = "";
-          await navigator.clipboard.writeText(invite(email)).then(() => { $("pmsg").textContent = `Added. Invite link for ${email} copied — paste it into your email to them.`; }, () => {}); }
-    catch { alert("Couldn't add this address."); }
+    const email = $("newemail").value.trim().toLowerCase(), token = randomToken();
+    try {
+      await setDoc(doc(db, "invites", await keyFor(token, email)), {
+        email, note: $("newnote").value.trim(), token, max: Number($("newmax").value), devices: [], createdAt: serverTimestamp() });
+      $("newemail").value = ""; $("newnote").value = "";
+      const box = $("newlink"); box.hidden = false; box.replaceChildren();
+      box.append(Object.assign(document.createElement("b"), { textContent: `Invitation for ${email} — send this link in your email:` }),
+                 Object.assign(document.createElement("div"), { textContent: link(token) }));
+      const c = btn("Copy link", "ok", () => copy(link(token), c)); c.style.marginLeft = "0"; c.style.marginTop = "10px";
+      const r = btn("Copy Russian link", "", () => copy(link(token, "ru"), r)); r.style.marginTop = "10px";
+      box.append(c, r);
+      navigator.clipboard.writeText(link(token)).then(() => (c.textContent = "Copied"), () => {});
+    } catch { alert("Couldn't create the invitation."); }
   });
 
-  onSnapshot(query(collection(db, "allow"), orderBy("addedAt", "desc")), snap => {
-    $("nallow").textContent = snap.size ? `(${snap.size})` : "";
-    if (!snap.size) return empty($("allow"), "Nobody yet. Add an email above.", 4);
-    $("allow").replaceChildren(...snap.docs.map(d => {
+  onSnapshot(query(collection(db, "invites"), orderBy("createdAt", "desc")), snap => {
+    $("ninv").textContent = snap.size ? `(${snap.size})` : "";
+    if (!snap.size) return empty($("invites"), "No invitations yet. Create one above.", 5);
+    $("invites").replaceChildren(...snap.docs.map(d => {
       const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
-      const copy = btn("Copy invite link", "", () => copyInvite(d.id, copy));
-      act.append(copy, btn("Remove", "danger", () => confirm(`Remove ${d.id}? They won't be able to open the deck.`) && removeAccess(d.id)),
-                 btn("Block", "danger", () => confirm(`Block ${d.id}? They go on the black list.`) && block(d.id)));
-      tr.append(cell(d.id), cell(v.note || "", "muted"), cell(when(v.addedAt), "muted"), act);
+      const c = btn("Copy link", "", () => copy(link(v.token), c));
+      act.append(c,
+        btn("Reset devices", "", () => confirm(`Reset devices for ${v.email}? The link will work again on new devices; current ones lose access.`) && updateDoc(d.ref, { devices: [] })),
+        btn("Remove", "danger", () => confirm(`Remove the invitation for ${v.email}? The link stops working.`) && deleteDoc(d.ref)),
+        btn("Block", "danger", async () => { if (confirm(`Block ${v.email}? The invitation is removed and the email goes on the black list.`)) { await block(v.email); await deleteDoc(d.ref); } }));
+      tr.append(cell(v.email), cell(v.note || "", "muted"), cell(`${v.devices.length} / ${v.max}`, v.devices.length >= v.max ? "" : "muted"), cell(when(v.createdAt), "muted"), act);
       return tr;
     }));
   });
 
+  // ---------- screenshot attempts ----------
   onSnapshot(query(collection(db, "strikes"), orderBy("at", "desc")), snap => {
     const n = snap.docs.filter(d => d.data().count >= 3).length;
     $("nstrikes").textContent = n ? `(${n} blocked)` : "";
@@ -181,6 +190,7 @@ function panel() {
     }));
   });
 
+  // ---------- black list ----------
   $("adddeny").addEventListener("submit", async e => {
     e.preventDefault();
     try { await block($("denyentry").value); $("denyentry").value = ""; } catch { alert("Couldn't block this entry."); }
@@ -196,7 +206,7 @@ function panel() {
     }));
   });
 
-  // slide order and titles, read from the deck itself
+  // ---------- visits ----------
   let order = [];
   getDoc(doc(db, "decksFull", "en")).then(s => {
     const html = new DOMParser().parseFromString(s.data().html, "text/html");
@@ -210,8 +220,8 @@ function panel() {
     const tr = document.createElement("tr"); tr.className = "detail";
     const td = document.createElement("td"); td.colSpan = 7; tr.append(td);
     const secs = v.slides || {}, max = Math.max(1, ...Object.values(secs));
-    const list = order.length ? order : Object.keys(secs).map(id => ({ id, title: id }));
     if (!Object.keys(secs).length) { td.textContent = "No time recorded yet."; td.className = "empty"; return tr; }
+    const list = order.length ? order : Object.keys(secs).map(id => ({ id, title: id }));
     list.forEach((sl, i) => {
       const n = secs[sl.id] || 0, row = document.createElement("div");
       row.className = "sl" + (n ? "" : " zero");
@@ -224,21 +234,19 @@ function panel() {
     if (v.last) td.append(Object.assign(document.createElement("p"), { className: "small", style: "margin-top:10px", textContent: `Last activity: ${when(v.last)}` }));
     return tr;
   }
-
   let views = [];
-  const drawViews = () => {
+  function drawViews() {
     const f = $("code").value.trim().toLowerCase();
     const list = f ? views.filter(v => (v.code || "").toLowerCase().includes(f) || (v.email || "").includes(f)) : views;
-    if (!list.length) return empty($("views"), f ? "No match." : "No views yet.", 7);
+    if (!list.length) return empty($("views"), f ? "No match." : "No visits yet.", 7);
     $("views").replaceChildren(...list.flatMap(v => {
       const tr = document.createElement("tr"); tr.className = "v"; tr.title = "Show slides";
-      const total = order.length || "?";
       tr.append(cell(v.email), cell(v.code || "", "muted"), cell((v.lang || "").toUpperCase(), "muted"), cell(when(v.at), "muted"),
-                cell(mmss(v.dur || 0)), cell(v.seen ? `${v.seen} / ${total}` : "–", "muted"), cell(device(v.ua || ""), "muted"));
+                cell(mmss(v.dur || 0)), cell(v.seen ? `${v.seen} / ${order.length || "?"}` : "–", "muted"), cell(device(v.ua || ""), "muted"));
       tr.onclick = () => { open.has(v._id) ? open.delete(v._id) : open.add(v._id); drawViews(); };
       return open.has(v._id) ? [tr, detail(v)] : [tr];
     }));
-  };
+  }
   $("code").addEventListener("input", drawViews);
   $("find").addEventListener("submit", e => e.preventDefault());
   onSnapshot(query(collection(db, "views"), orderBy("at", "desc"), limit(500)), snap => { views = snap.docs.map(d => ({ ...d.data(), _id: d.id })); drawViews(); });
