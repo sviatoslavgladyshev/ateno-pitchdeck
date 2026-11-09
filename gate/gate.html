@@ -29,18 +29,24 @@
     <p>{{T_DENIED}}</p>
     <p class="gap"><b id="who"></b></p>
   </section>
+  <section id="blocked" hidden>
+    <h1>{{T_BLOCKED_TITLE}}</h1>
+    <p>{{T_BLOCKED}}</p>
+  </section>
   <section id="wait"><p>{{T_LOADING}}</p></section>
   <p class="msg" id="msg" role="status"></p>
   <p class="small">{{T_FOOT}} · <a href="{{OTHER_HREF}}">{{OTHER_LABEL}}</a><span id="outwrap" hidden> · <a href="#" id="out">{{T_SIGNOUT}}</a></span></p>
 </main>
 <script type="module">
-import { auth, db, $, sendLink, currentUser, logout } from "/static/app.js";
-import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp }
+import { auth, db, $, sendLink, currentUser, logout, ADMIN } from "/static/app.js";
+import { doc, getDoc, setDoc, addDoc, updateDoc, collection, serverTimestamp, runTransaction }
   from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
 
-const LANG = "{{LANG}}";
-const T = { sendFail: "{{T_SEND_FAIL}}", error: "{{T_ERROR}}", shield: "{{T_SHIELD}}", print: "{{T_PRINT}}" };
-const show = id => { for (const s of ["ask", "sent", "denied", "wait"]) $(s).hidden = s !== id; };
+const LANG = "{{LANG}}", LIMIT = 3;
+const T = { sendFail: "{{T_SEND_FAIL}}", error: "{{T_ERROR}}", shield: "{{T_SHIELD}}", strike: "{{T_STRIKE}}",
+            blockedTitle: "{{T_BLOCKED_TITLE}}", blocked: "{{T_BLOCKED}}" };
+const SECTIONS = ["ask", "sent", "denied", "blocked", "wait"];
+const show = id => { for (const s of SECTIONS) $(s).hidden = s !== id; };
 const say = (t, bad) => { $("msg").textContent = t || ""; $("msg").className = "msg" + (bad ? " bad" : ""); };
 
 $("out").addEventListener("click", async e => { e.preventDefault(); await logout(); location.reload(); });
@@ -49,66 +55,150 @@ $("form").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("email").value.trim().toLowerCase();
   $("send").disabled = true; say("");
-  try { await sendLink(email, LANG); $("sentto").textContent = email; show("sent"); }
+  try { await sendLink(email, LANG); localStorage.setItem("ateno-pitch-last", email); $("sentto").textContent = email; show("sent"); }
   catch (err) { say(T.sendFail, true); }
   $("send").disabled = false;
 });
 
+const pre = new URLSearchParams(location.search).get("e") || localStorage.getItem("ateno-pitch-last") || "";
+if (pre) $("email").value = pre;
 const user = await currentUser();
-if (!user || !user.emailVerified) show("ask");
+if (!user || !user.emailVerified) { show("ask"); if (pre) $("send").focus(); }
 else await openDeck(user);
 
-async function openDeck(user) {
-  const email = user.email.toLowerCase();
-  let snap;
-  try { snap = await getDoc(doc(db, "decks", LANG)); }
-  catch (e) {
-    if (e.code !== "permission-denied") { show("ask"); say(T.error, true); return; }
-    // signed in, but not on the list: leave a request for the admin
-    await setDoc(doc(db, "requests", email), { email, lang: LANG, at: serverTimestamp() }).catch(() => {});
-    $("who").textContent = email; $("outwrap").hidden = false; show("denied"); return;
-  }
-  if (!new URLSearchParams(location.search).has("slides"))
-    addDoc(collection(db, "views"), { email, lang: LANG, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 399) }).catch(() => {});
-  document.open(); document.write(snap.data().html); document.close();
-  guard(email);
+async function strikes(email) {
+  try { const s = await getDoc(doc(db, "strikes", email)); return s.exists() ? s.data().count : 0; } catch { return 0; }
 }
 
-// ---------- after the deck is on screen: watermark + no printing, saving or copying ----------
-function guard(email) {
+async function openDeck(user) {
+  const email = user.email.toLowerCase(), admin = email === ADMIN;
+  let snap;
+  try { snap = await getDoc(doc(db, admin ? "decksFull" : "decks", LANG)); }
+  catch (e) {
+    if (e.code !== "permission-denied") { show("ask"); say(T.error, true); return; }
+    $("outwrap").hidden = false;
+    if (await strikes(email) >= LIMIT) { show("blocked"); return; }
+    // signed in, but not on the list: leave a request for the admin
+    await setDoc(doc(db, "requests", email), { email, lang: LANG, at: serverTimestamp() }).catch(() => {});
+    $("who").textContent = email; show("denied"); return;
+  }
+  // a short code for this viewing, hidden in the slides; /admin/ shows which email and time it belongs to
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(6));
+  const code = [...r].map(x => A[x % A.length]).join("");
+  if (!new URLSearchParams(location.search).has("slides"))
+    var viewRef = await addDoc(collection(db, "views"), { email, lang: LANG, code, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 399) }).catch(() => null);
+  const used = admin ? 0 : await strikes(email);
+  if (!admin) {
+    localStorage.setItem("ateno-mode", "viewer");
+    const q = new URLSearchParams(location.search);
+    if (q.has("slides") || q.has("e")) { q.delete("slides"); q.delete("e"); history.replaceState(null, "", location.pathname + (q.size ? "?" + q : "") + location.hash); }
+  }
+  document.open(); document.write(snap.data().html); document.close();
+  guard(email, code, admin, used);
+  if (viewRef) track(viewRef);
+}
+
+// ---------- what they saw: seconds on each slide, saved to this view's log entry ----------
+function track(ref) {
+  const d = document, secs = {};
+  let total = 0, dirty = false;
+  setInterval(() => {
+    if (d.visibilityState !== "visible") return;            // only count time the deck is actually on screen
+    const id = d.querySelector(".slide.active")?.id;
+    if (!id) return;
+    secs[id] = (secs[id] || 0) + 1; total += 1; dirty = true;
+  }, 1000);
+  const save = () => {
+    if (!dirty) return; dirty = false;
+    updateDoc(ref, { slides: { ...secs }, seen: Object.keys(secs).length, dur: total, last: serverTimestamp() }).catch(() => {});
+  };
+  setInterval(save, 10000);
+  d.addEventListener("visibilitychange", () => { if (d.visibilityState === "hidden") save(); });
+  addEventListener("pagehide", save);
+}
+
+// ---------- after the deck is on screen ----------
+function guard(email, code, admin, used) {
   const d = document;
-  const stamp = `${email} · ${new Date().toISOString().slice(0, 10)}`;
-  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const tile = `<svg xmlns='http://www.w3.org/2000/svg' width='560' height='300'><text x='20' y='170' transform='rotate(-22 280 150)' font-family='Arial,sans-serif' font-size='22' fill='rgb(128,128,128)' fill-opacity='.22'>${esc(stamp)}</text></svg>`;
+  // Invisible watermark: the view code, tiled at ~3% grey. Not visible on screen; on a screenshot,
+  // raise contrast/levels and it appears. It is unlikely to survive a photo of the screen.
+  const tile = `<svg xmlns='http://www.w3.org/2000/svg' width='420' height='240'><text x='40' y='140' transform='rotate(-22 210 120)' font-family='Arial,sans-serif' font-weight='700' font-size='30' letter-spacing='4' fill='rgb(128,128,128)' fill-opacity='.035'>${code}</text></svg>`;
   const css = d.createElement("style");
   css.textContent = `
     html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
     #wm{position:fixed;inset:0;z-index:2147483646;pointer-events:none;background-image:url("data:image/svg+xml,${encodeURIComponent(tile)}")}
-    #shield{position:fixed;inset:0;z-index:2147483647;background:#000;color:#86868b;display:none;align-items:center;justify-content:center;font:16px -apple-system,Arial,sans-serif}
+    #shield{position:fixed;inset:0;z-index:2147483647;background:#000;color:#f5f5f7;display:none;flex-direction:column;gap:10px;align-items:center;justify-content:center;text-align:center;padding:24px;font:17px -apple-system,Arial,sans-serif}
+    #shield small{color:#86868b;font-size:14px}
     body.shielded #shield{display:flex}
     body.shielded #stage,body.shielded #presenter{filter:blur(40px)}
-    @media print{html,body{display:none!important}}`;
+    @media print{html,body{display:none!important}}
+    ${admin ? "" : "#seg,#bpres,#notes,#remote,#start{display:none!important}"}`;
   d.head.append(css);
   const wm = d.createElement("div"); wm.id = "wm"; wm.setAttribute("aria-hidden", "true");
-  const sh = d.createElement("div"); sh.id = "shield"; sh.textContent = T.shield;
+  const sh = d.createElement("div"); sh.id = "shield";
   d.body.append(wm, sh);
-  // the watermark is put back if someone removes it in the developer tools
   new MutationObserver(() => { if (!wm.isConnected) d.body.append(wm); if (!sh.isConnected) d.body.append(sh); })
     .observe(d.body, { childList: true });
 
   let timer;
-  const cover = (ms = 4000) => { d.body.classList.add("shielded"); clearTimeout(timer); timer = setTimeout(() => d.body.classList.remove("shielded"), ms); };
+  const cover = (text, sub = "", ms = 4000) => {
+    sh.innerHTML = ""; sh.append(Object.assign(d.createElement("div"), { textContent: text }));
+    if (sub) sh.append(Object.assign(d.createElement("small"), { textContent: sub }));
+    d.body.classList.add("shielded"); clearTimeout(timer);
+    if (ms) timer = setTimeout(() => d.body.classList.remove("shielded"), ms);
+  };
+
+  // count an attempt; at LIMIT the deck is wiped from this tab and stops opening until the admin resets it
+  let count = used, last = 0;
+  async function strike(kind) {
+    if (admin) return cover(T.shield, "(admin: not counted)", 2500);
+    const now = Date.now(); if (now - last < 2500) return; last = now;   // one key press = one attempt
+    count += 1;
+    if (count >= LIMIT) wipe();
+    else cover(T.shield, T.strike.replaceAll("{n}", count).replaceAll("{max}", LIMIT));
+    try {
+      await runTransaction(db, async tx => {
+        const ref = doc(db, "strikes", email), s = await tx.get(ref);
+        const n = s.exists() ? s.data().count + 1 : 1;
+        tx.set(ref, { email, count: n, at: serverTimestamp(), kind });
+        count = Math.max(count, n);
+      });
+    } catch {}
+    if (count >= LIMIT) location.replace(location.pathname);   // reload: the sign-in page now shows "blocked"
+  }
+  function wipe() {
+    d.documentElement.innerHTML = `<head><meta charset="utf-8"><title>Ateno</title><link rel="stylesheet" href="/static/gate.css"></head>
+      <body><main><img class="logo" src="/static/logo.png" alt="Ateno"><h1></h1><p></p></main></body>`;
+    d.querySelector("h1").textContent = T.blockedTitle; d.querySelector("p").textContent = T.blocked;
+  }
+  if (count >= LIMIT && !admin) return wipe();
+
+  // Screenshot shortcuts: macOS Cmd+Shift+3/4/5 and Windows Win+Shift+S are taken by the system, so the page
+  // sees Cmd/Win+Shift and then no other key. Normal shortcuts (Cmd+Shift+T…) deliver their key and don't count.
+  let combo = false, other = false;
   addEventListener("keydown", e => {
     const k = (e.key || "").toLowerCase(), mod = e.metaKey || e.ctrlKey;
-    if (mod && (k === "p" || k === "s")) { e.preventDefault(); e.stopImmediatePropagation(); say2(T.print); }
-    // macOS screenshot shortcuts start with Cmd+Shift; Windows uses PrintScreen and Win+Shift+S
-    if ((e.metaKey && e.shiftKey) || k === "printscreen" || (e.shiftKey && e.getModifierState?.("OS"))) cover();
+    // presenter view, displays, phone remote and notes: admin only
+    if (!admin && !mod && !e.altKey && ["p", "d", "r", "n"].includes(k)) { e.stopImmediatePropagation(); return; }
+    if (mod && (k === "p" || k === "s")) { e.preventDefault(); e.stopImmediatePropagation(); strike(k === "p" ? "print" : "save"); return; }
+    if (k === "printscreen") { strike("printscreen"); return; }
+    if (e.metaKey && e.shiftKey && (k === "meta" || k === "shift" || k === "os")) {
+      if (!combo) { combo = true; other = false; cover(T.shield, "", 0); }
+      return;
+    }
+    if (combo && !["meta", "shift", "os", "control", "alt"].includes(k)) other = true;
   }, true);
-  addEventListener("keyup", e => { if ((e.key || "").toLowerCase() === "printscreen") { cover(); navigator.clipboard?.writeText("").catch(() => {}); } }, true);
-  addEventListener("beforeprint", () => cover(60000));
+  addEventListener("keyup", e => {
+    const k = (e.key || "").toLowerCase();
+    if (k === "printscreen") { navigator.clipboard?.writeText("").catch(() => {}); strike("printscreen"); }
+    if (combo && (k === "meta" || k === "shift" || k === "os")) {
+      combo = false;
+      if (!other) strike("screenshot"); else d.body.classList.remove("shielded");
+    }
+  }, true);
+  addEventListener("beforeprint", () => { cover(T.shield, "", 60000); strike("print"); });
   for (const ev of ["contextmenu", "dragstart", "selectstart", "copy", "cut"]) addEventListener(ev, e => e.preventDefault(), true);
   d.querySelectorAll("video").forEach(v => { v.disablePictureInPicture = true; v.setAttribute("controlslist", "nodownload noplaybackrate"); });
-  function say2(t) { sh.textContent = t; cover(1500); setTimeout(() => (sh.textContent = T.shield), 1600); }
 }
 </script>
 </body>

@@ -27,6 +27,13 @@ td.act{text-align:right;white-space:nowrap}
 .mini.danger:hover{background:#ff453a;color:#fff}
 .empty{color:#6e6e73;font-size:14px;padding:12px 8px}
 .count{color:#6e6e73;font-weight:400}
+tr.v{cursor:pointer}
+tr.v:hover td{background:rgba(255,255,255,.03)}
+tr.detail td{padding:6px 8px 18px}
+.sl{display:grid;grid-template-columns:34px 1fr 170px 56px;gap:10px;align-items:center;font-size:13px;color:#a1a1a6;padding:3px 0}
+.sl .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
+.sl .bar i{display:block;height:100%;background:linear-gradient(90deg,#a78bfa,#60a5fa)}
+.sl.zero{opacity:.4}
 </style>
 </head>
 <body>
@@ -50,10 +57,15 @@ td.act{text-align:right;white-space:nowrap}
   <div class="top"><img src="/static/logo.png" alt=""><h1>Deck access</h1>
     <a href="/en/" target="_blank">Open EN</a><a href="/ru/" target="_blank">Open RU</a><a href="#" class="out">Sign out</a></div>
   <p>Only the people listed here can open the deck at <b id="host"></b>. You always can.</p>
+  <p class="msg" id="pmsg" role="status"></p>
 
   <h2>Requests <span class="count" id="nreq"></span></h2>
   <p>People who signed in but are not on the list yet.</p>
   <table><tbody id="reqs"></tbody></table>
+
+  <h2>Screenshot attempts <span class="count" id="nstrikes"></span></h2>
+  <p>At 3 attempts the deck stops opening for that person. Reset to give access back.</p>
+  <table><tbody id="strikes"></tbody></table>
 
   <h2>Can view <span class="count" id="nallow"></span></h2>
   <form class="row" id="add" style="margin-top:0">
@@ -63,14 +75,24 @@ td.act{text-align:right;white-space:nowrap}
   </form>
   <table><thead><tr><th>Email</th><th>Note</th><th>Added</th><th></th></tr></thead><tbody id="allow"></tbody></table>
 
+  <h2>Black list <span class="count" id="ndeny"></span></h2>
+  <p>These people never see the deck, even if they are on the list above. Use an email or a whole domain, e.g. <b>@competitor.com</b>.</p>
+  <form class="row" id="adddeny" style="margin-top:12px">
+    <input id="denyentry" required placeholder="name@company.com or @company.com" aria-label="Email or domain to block">
+    <button type="submit">Block</button>
+  </form>
+  <table><tbody id="deny"></tbody></table>
+
   <h2>Recent views</h2>
-  <table><thead><tr><th>Email</th><th>Deck</th><th>When</th><th>Device</th></tr></thead><tbody id="views"></tbody></table>
+  <p>Each opening hides its code in the slides, invisible on screen. Found a leaked screenshot? Raise its contrast to read the code, then search it here.</p>
+  <form class="row" id="find" style="margin-top:12px"><input id="code" placeholder="Code or email" aria-label="Search views" autocomplete="off"></form>
+  <table><thead><tr><th>Email</th><th>Code</th><th>Deck</th><th>Opened</th><th>Time</th><th>Slides</th><th>Device</th></tr></thead><tbody id="views"></tbody></table>
   <p class="small">Removing someone stops them opening the deck again; a tab they already have open stays open until they close it.</p>
 </main>
 
 <script type="module">
 import { auth, db, $, sendLink, currentUser, logout, ADMIN, HOST } from "/static/app.js";
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, limit, serverTimestamp }
+import { collection, doc, getDoc, setDoc, deleteDoc, writeBatch, onSnapshot, query, orderBy, limit, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
 
 const show = id => { for (const s of ["ask", "sent", "notadmin", "wait"]) $(s).hidden = s !== id; };
@@ -97,6 +119,21 @@ function cell(text, cls) { const td = document.createElement("td"); td.textConte
 function btn(label, cls, fn) { const b = document.createElement("button"); b.className = "mini " + cls; b.textContent = label; b.onclick = fn; return b; }
 function empty(tb, text, cols) { const tr = document.createElement("tr"); const td = cell(text, "empty"); td.colSpan = cols; tr.append(td); tb.replaceChildren(tr); }
 
+// invite link: opens the deck page with the email already filled in
+const invite = email => `https://${HOST}/en/?e=${encodeURIComponent(email)}`;
+async function copyInvite(email, button) {
+  try { await navigator.clipboard.writeText(invite(email)); const t = button.textContent; button.textContent = "Copied"; setTimeout(() => (button.textContent = t), 1500); }
+  catch { prompt("Invite link:", invite(email)); }
+}
+async function block(entry, note = "") {
+  entry = entry.trim().toLowerCase();
+  if (!/^(@|[^@\s]+@)[^@\s]+\.[^@\s]+$/.test(entry)) return alert("Enter an email or a domain like @company.com");
+  const b = writeBatch(db);
+  b.set(doc(db, "deny", entry), { entry, note, addedAt: serverTimestamp() });
+  if (!entry.startsWith("@")) { b.delete(doc(db, "allow", entry)); b.delete(doc(db, "requests", entry)); }
+  await b.commit();
+}
+
 async function allow(email, note = "") {
   email = email.trim().toLowerCase();
   await setDoc(doc(db, "allow", email), { email, note, addedAt: serverTimestamp() });
@@ -108,7 +145,9 @@ function panel() {
 
   $("add").addEventListener("submit", async e => {
     e.preventDefault();
-    try { await allow($("newemail").value, $("newnote").value.trim()); $("newemail").value = ""; $("newnote").value = ""; }
+    const email = $("newemail").value.trim().toLowerCase();
+    try { await allow(email, $("newnote").value.trim()); $("newemail").value = ""; $("newnote").value = "";
+          await navigator.clipboard.writeText(invite(email)).then(() => { $("pmsg").textContent = `Added. Invite link for ${email} copied — paste it into your email to them.`; }, () => {}); }
     catch { alert("Couldn't add this address."); }
   });
 
@@ -117,7 +156,9 @@ function panel() {
     if (!snap.size) return empty($("allow"), "Nobody yet. Add an email above.", 4);
     $("allow").replaceChildren(...snap.docs.map(d => {
       const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
-      act.append(btn("Remove", "danger", () => confirm(`Remove ${d.id}? They won't be able to open the deck.`) && deleteDoc(d.ref)));
+      const copy = btn("Copy invite link", "", () => copyInvite(d.id, copy));
+      act.append(copy, btn("Remove", "danger", () => confirm(`Remove ${d.id}? They won't be able to open the deck.`) && deleteDoc(d.ref)),
+                 btn("Block", "danger", () => confirm(`Block ${d.id}? They go on the black list.`) && block(d.id)));
       tr.append(cell(d.id), cell(v.note || "", "muted"), cell(when(v.addedAt), "muted"), act);
       return tr;
     }));
@@ -128,20 +169,87 @@ function panel() {
     if (!snap.size) return empty($("reqs"), "No requests.", 3);
     $("reqs").replaceChildren(...snap.docs.map(d => {
       const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
-      act.append(btn("Allow", "ok", () => allow(d.id)), btn("Dismiss", "", () => deleteDoc(d.ref)));
+      act.append(btn("Allow", "ok", () => allow(d.id)), btn("Dismiss", "", () => deleteDoc(d.ref)),
+                 btn("Block", "danger", () => confirm(`Block ${d.id}?`) && block(d.id)));
       tr.append(cell(d.id), cell(when(v.at), "muted"), act);
       return tr;
     }));
   });
 
-  onSnapshot(query(collection(db, "views"), orderBy("at", "desc"), limit(100)), snap => {
-    if (!snap.size) return empty($("views"), "No views yet.", 4);
-    $("views").replaceChildren(...snap.docs.map(d => {
-      const v = d.data(), tr = document.createElement("tr");
-      tr.append(cell(v.email), cell((v.lang || "").toUpperCase(), "muted"), cell(when(v.at), "muted"), cell(device(v.ua || ""), "muted"));
+  onSnapshot(query(collection(db, "strikes"), orderBy("at", "desc")), snap => {
+    const n = snap.docs.filter(d => d.data().count >= 3).length;
+    $("nstrikes").textContent = n ? `(${n} blocked)` : "";
+    if (!snap.size) return empty($("strikes"), "None.", 4);
+    $("strikes").replaceChildren(...snap.docs.map(d => {
+      const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
+      act.append(btn(v.count >= 3 ? "Unblock" : "Reset", "ok", () => confirm(`Reset attempts for ${d.id}?`) && deleteDoc(d.ref)));
+      tr.append(cell(d.id), cell(v.count >= 3 ? `Blocked · ${v.count}` : `${v.count} of 3`, v.count >= 3 ? "" : "muted"),
+                cell(`${v.kind || ""} · ${when(v.at)}`, "muted"), act);
       return tr;
     }));
   });
+
+  $("adddeny").addEventListener("submit", async e => {
+    e.preventDefault();
+    try { await block($("denyentry").value); $("denyentry").value = ""; } catch { alert("Couldn't block this entry."); }
+  });
+  onSnapshot(query(collection(db, "deny"), orderBy("addedAt", "desc")), snap => {
+    $("ndeny").textContent = snap.size ? `(${snap.size})` : "";
+    if (!snap.size) return empty($("deny"), "Nobody blocked.", 3);
+    $("deny").replaceChildren(...snap.docs.map(d => {
+      const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
+      act.append(btn("Unblock", "", () => deleteDoc(d.ref)));
+      tr.append(cell(d.id), cell(when(v.addedAt), "muted"), act);
+      return tr;
+    }));
+  });
+
+  // slide order and titles, read from the deck itself
+  let order = [];
+  getDoc(doc(db, "decksFull", "en")).then(s => {
+    const html = new DOMParser().parseFromString(s.data().html, "text/html");
+    order = [...html.querySelectorAll("section.slide")].map(sec => ({ id: sec.id,
+      title: (sec.querySelector("h1,h2")?.textContent || sec.id).replace(/\s+/g, " ").trim().slice(0, 70) }));
+    drawViews();
+  }).catch(() => {});
+  const mmss = n => n ? `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}` : "–";
+  const open = new Set();
+  function detail(v) {
+    const tr = document.createElement("tr"); tr.className = "detail";
+    const td = document.createElement("td"); td.colSpan = 7; tr.append(td);
+    const secs = v.slides || {}, max = Math.max(1, ...Object.values(secs));
+    const list = order.length ? order : Object.keys(secs).map(id => ({ id, title: id }));
+    if (!Object.keys(secs).length) { td.textContent = "No time recorded yet."; td.className = "empty"; return tr; }
+    list.forEach((sl, i) => {
+      const n = secs[sl.id] || 0, row = document.createElement("div");
+      row.className = "sl" + (n ? "" : " zero");
+      const bar = document.createElement("div"); bar.className = "bar"; bar.append(Object.assign(document.createElement("i"), { style: `width:${100 * n / max}%` }));
+      row.append(Object.assign(document.createElement("span"), { textContent: String(i + 1).padStart(2, "0") }),
+                 Object.assign(document.createElement("span"), { textContent: sl.title }), bar,
+                 Object.assign(document.createElement("span"), { textContent: n ? mmss(n) : "not seen" }));
+      td.append(row);
+    });
+    if (v.last) td.append(Object.assign(document.createElement("p"), { className: "small", style: "margin-top:10px", textContent: `Last activity: ${when(v.last)}` }));
+    return tr;
+  }
+
+  let views = [];
+  const drawViews = () => {
+    const f = $("code").value.trim().toLowerCase();
+    const list = f ? views.filter(v => (v.code || "").toLowerCase().includes(f) || (v.email || "").includes(f)) : views;
+    if (!list.length) return empty($("views"), f ? "No match." : "No views yet.", 7);
+    $("views").replaceChildren(...list.flatMap(v => {
+      const tr = document.createElement("tr"); tr.className = "v"; tr.title = "Show slides";
+      const total = order.length || "?";
+      tr.append(cell(v.email), cell(v.code || "", "muted"), cell((v.lang || "").toUpperCase(), "muted"), cell(when(v.at), "muted"),
+                cell(mmss(v.dur || 0)), cell(v.seen ? `${v.seen} / ${total}` : "–", "muted"), cell(device(v.ua || ""), "muted"));
+      tr.onclick = () => { open.has(v._id) ? open.delete(v._id) : open.add(v._id); drawViews(); };
+      return open.has(v._id) ? [tr, detail(v)] : [tr];
+    }));
+  };
+  $("code").addEventListener("input", drawViews);
+  $("find").addEventListener("submit", e => e.preventDefault());
+  onSnapshot(query(collection(db, "views"), orderBy("at", "desc"), limit(500)), snap => { views = snap.docs.map(d => ({ ...d.data(), _id: d.id })); drawViews(); });
 }
 </script>
 </body>

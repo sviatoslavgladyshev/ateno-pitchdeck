@@ -39,7 +39,8 @@ TEXT = {
                T_DENIED_TITLE="Access requested", T_DENIED="This deck is shared by invitation. We've let Ateno know; you'll be able to open it once they add you.",
                T_SEND_FAIL="Couldn't send the link. Check the address and try again.",
                T_ERROR="Couldn't open the deck. Try again in a moment.",
-               T_SHIELD="Screenshots are not allowed", T_PRINT="Printing and saving are disabled",
+               T_SHIELD="Screenshots, printing and saving are not allowed", T_STRIKE="Attempt {n} of {max}. At {max}, access to the deck is blocked.",
+               T_BLOCKED_TITLE="Access blocked", T_BLOCKED="Too many screenshot or print attempts. Contact Ateno to restore access.",
                OTHER_HREF="/ru/", OTHER_LABEL="Русский"),
     "ru": dict(TITLE="Ateno — питч-дек", T_TITLE="Питч-дек Ateno",
                T_LEAD="Введите email. Мы пришлём ссылку для входа.",
@@ -49,7 +50,8 @@ TEXT = {
                T_DENIED_TITLE="Запрос отправлен", T_DENIED="Дек открыт только по приглашению. Мы сообщили Ateno; вы сможете открыть его, когда вас добавят.",
                T_SEND_FAIL="Не удалось отправить ссылку. Проверьте адрес и попробуйте ещё раз.",
                T_ERROR="Не удалось открыть дек. Попробуйте чуть позже.",
-               T_SHIELD="Скриншоты запрещены", T_PRINT="Печать и сохранение отключены",
+               T_SHIELD="Скриншоты, печать и сохранение запрещены", T_STRIKE="Попытка {n} из {max}. После {max} доступ к деку будет заблокирован.",
+               T_BLOCKED_TITLE="Доступ заблокирован", T_BLOCKED="Слишком много попыток скриншота или печати. Чтобы восстановить доступ, свяжитесь с Ateno.",
                OTHER_HREF="/en/", OTHER_LABEL="English"),
 }
 COMMON = {"SDK": SDK, "CONFIG": json.dumps(CONFIG), "HOST": HOST, "ADMIN": ADMIN}
@@ -92,8 +94,8 @@ def protect(html, prefix):
     return html, n
 
 
-def upload(lang, html, access):
-    url = (f"https://firestore.googleapis.com/v1/projects/{PROJECT}/databases/(default)/documents/decks/{lang}")
+def upload(lang, html, access, coll="decks"):
+    url = (f"https://firestore.googleapis.com/v1/projects/{PROJECT}/databases/(default)/documents/{coll}/{lang}")
     body = {"fields": {"html": {"stringValue": html},
                        "updated": {"timestampValue": datetime.datetime.now(datetime.timezone.utc).isoformat()}}}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), method="PATCH",
@@ -117,7 +119,10 @@ def main():
         shutil.copy(deck / "remote.html", files / "remote.html")
         html, n = protect((deck / "index.html").read_text(encoding="utf-8"), prefix)
         assert len(html.encode()) < 1_000_000, "deck HTML is over Firestore's 1 MB document limit"
-        upload(lang, html, access)
+        upload(lang, html, access, "decksFull")                    # admin: with speaker notes
+        viewer = re.sub(r"<aside>[\s\S]*?</aside>", "<aside></aside>", html)
+        assert not re.search(r"<aside>[^<]", viewer), "speaker notes left in the viewer deck"
+        upload(lang, viewer, access)                                 # everyone else: no notes
         (site / lang).mkdir(parents=True, exist_ok=True)
         (site / lang / "index.html").write_text(fill(gate, {**TEXT[lang], **COMMON, "LANG": lang}), encoding="utf-8")
         print(f"{lang}: deck uploaded ({len(html)//1024} KB, {n} paths rewritten)")
