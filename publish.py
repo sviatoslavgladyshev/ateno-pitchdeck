@@ -5,17 +5,15 @@ Usage:
   python3 publish.py              # upload decks + deploy pages and rules
   python3 publish.py --rotate     # also change the secret path of images/thumbnails
 
-How it is protected:
-- /en/ and /ru/ are a sign-in form (gate/gate.html). Firebase emails a one-time link that opens /auth/,
-  which proves the visitor owns that address.
-- Only addresses on the access list can open the deck. The admin (ADMIN below, also in firestore.rules)
-  manages the list at /admin/: add, remove, approve requests, see who opened the deck.
-- The deck itself (slide text and speaker notes) is stored in Firestore (decks/en, decks/ru); firestore.rules
-  let only listed, verified emails read it.
+How it is protected (the site sends no email):
+- The admin creates invitations at /admin/ (admin_link.py gives the admin link) and sends each link himself.
+  A link opens the deck only after the visitor confirms the invited email, and only on at most N devices
+  (anonymous Firebase session per browser). The rules are in firestore.rules.
+- The deck HTML is stored in Firestore: decks/<lang> for viewers (speaker notes removed), decksFull/<lang> for the admin.
 - Images, videos and thumbnails are static files under /d/<random token>/; the token appears only inside
   the protected deck HTML and is kept in .deck-token (not in git).
-- In the browser: email watermark on every slide, printing/saving/copying disabled, the screen goes black on
-  screenshot shortcuts. A determined viewer can still photograph the screen; the watermark shows who it was.
+- In the browser: invisible view code in every slide, presenter tools for the admin only, printing/saving/copying
+  disabled, 3 screenshot attempts block access. A phone camera can't be blocked.
 
 Needs: firebase CLI and gcloud, both logged in to an owner account of the project.
 """
