@@ -16,11 +16,29 @@ export const db = getFirestore(app);
 export const EMAIL_KEY = "ateno-pitch-email";
 export const $ = id => document.getElementById(id);
 
+export const NONCE_KEY = "ateno-pitch-nonce";
+
+// Only invited addresses get a link. The page checks invited/<sha256(email)>: it can answer "is this one
+// address invited?" but never lists anyone. (The rules check the real list again before showing the deck.)
+export async function sha256(text) {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+export async function isInvited(email) {
+  if (email === ADMIN) return true;
+  const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js");
+  try { return (await getDoc(doc(db, "invited", await sha256(email)))).exists(); } catch { return false; }
+}
+
 export async function sendLink(email, lang) {
   auth.languageCode = lang;
-  // the link in the email opens /auth/, which signs in and comes back to this page
-  await sendSignInLinkToEmail(auth, email, { url: `https://${HOST}/auth/?next=${encodeURIComponent(location.pathname)}`, handleCodeInApp: true });
+  // A one-time key stays in this browser and rides in the link. /auth/ only signs in where the key matches,
+  // so a forwarded email (opened anywhere else) does not work.
+  const nonce = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join("");
+  await sendSignInLinkToEmail(auth, email, {
+    url: `https://${HOST}/auth/?next=${encodeURIComponent(location.pathname)}&n=${nonce}`, handleCodeInApp: true });
   localStorage.setItem(EMAIL_KEY, email);
+  localStorage.setItem(NONCE_KEY, nonce);
 }
 
 export function currentUser() {

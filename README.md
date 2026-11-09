@@ -41,9 +41,12 @@ Honesty labels ("Concept render", "Illustrative build-up") are part of the slide
 ## Private link with email sign-in (Firebase)
 The deck is published at **https://pitch.ateno.co** (Firebase project `ateno-pitch`, free Spark plan).
 
-- **Viewers** open https://pitch.ateno.co/en/ (or /ru/), enter their email and get a one-time sign-in link.
-  Only addresses on the access list see the deck; anyone else lands in *Requests*.
-- **Admin** (glsvyatoslav@gmail.com): https://pitch.ateno.co/admin/ — add or remove people, approve requests, see who opened the deck.
-- **Copy protection:** email watermark on every slide, printing/PDF, saving, right-click and copying disabled,
+- **Invite only:** add someone at https://pitch.ateno.co/admin/, then send them their invite link (Copy invite link).
+  Addresses not on the list can't even get a sign-in email. Black list: single emails or whole domains (@company.com).
+- **Viewers** enter their email, get a one-time sign-in link and stay signed in on that browser. The link only works in the
+  browser that asked for it, so a forwarded email does not open the deck. Viewers get the deck without speaker notes and without presenter mode.
+- **Admin** (glsvyatoslav@gmail.com): https://pitch.ateno.co/admin/ — sign in there the same way. Access list, black list,
+  screenshot attempts (3 = blocked until you reset), and every visit with time spent on each slide.
+- **Copy protection:** an invisible view code on every slide (raise a screenshot's contrast to read it, then search it in admin), printing/PDF, saving, right-click and copying disabled,
   the screen goes black on screenshot shortcuts. A phone camera can't be blocked; the watermark shows who leaked it.
 - **Publish after a rebuild:** `python3 publish.py` (needs `firebase` and `gcloud` logged in). Details at the top of `publish.py`.

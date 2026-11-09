@@ -38,12 +38,12 @@
   <p class="small">{{T_FOOT}} · <a href="{{OTHER_HREF}}">{{OTHER_LABEL}}</a><span id="outwrap" hidden> · <a href="#" id="out">{{T_SIGNOUT}}</a></span></p>
 </main>
 <script type="module">
-import { auth, db, $, sendLink, currentUser, logout, ADMIN } from "/static/app.js";
+import { auth, db, $, sendLink, isInvited, currentUser, logout, ADMIN } from "/static/app.js";
 import { doc, getDoc, setDoc, addDoc, updateDoc, collection, serverTimestamp, runTransaction }
   from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
 
 const LANG = "{{LANG}}", LIMIT = 3;
-const T = { sendFail: "{{T_SEND_FAIL}}", error: "{{T_ERROR}}", shield: "{{T_SHIELD}}", strike: "{{T_STRIKE}}",
+const T = { notInvited: "{{T_NOT_INVITED}}", sendFail: "{{T_SEND_FAIL}}", error: "{{T_ERROR}}", shield: "{{T_SHIELD}}", strike: "{{T_STRIKE}}",
             blockedTitle: "{{T_BLOCKED_TITLE}}", blocked: "{{T_BLOCKED}}" };
 const SECTIONS = ["ask", "sent", "denied", "blocked", "wait"];
 const show = id => { for (const s of SECTIONS) $(s).hidden = s !== id; };
@@ -55,6 +55,8 @@ $("form").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("email").value.trim().toLowerCase();
   $("send").disabled = true; say("");
+  // not on the admin's list: no email is sent at all
+  if (!(await isInvited(email))) { say(T.notInvited, true); $("send").disabled = false; return; }
   try { await sendLink(email, LANG); localStorage.setItem("ateno-pitch-last", email); $("sentto").textContent = email; show("sent"); }
   catch (err) { say(T.sendFail, true); }
   $("send").disabled = false;
@@ -72,22 +74,24 @@ async function strikes(email) {
 
 async function openDeck(user) {
   const email = user.email.toLowerCase(), admin = email === ADMIN;
+  // deck and screenshot count load together
+  const usedP = admin ? Promise.resolve(0) : strikes(email);
   let snap;
   try { snap = await getDoc(doc(db, admin ? "decksFull" : "decks", LANG)); }
   catch (e) {
     if (e.code !== "permission-denied") { show("ask"); say(T.error, true); return; }
     $("outwrap").hidden = false;
-    if (await strikes(email) >= LIMIT) { show("blocked"); return; }
-    // signed in, but not on the list: leave a request for the admin
-    await setDoc(doc(db, "requests", email), { email, lang: LANG, at: serverTimestamp() }).catch(() => {});
+    if (await usedP >= LIMIT) { show("blocked"); return; }
+    // signed in, but not (or no longer) on the list
     $("who").textContent = email; show("denied"); return;
   }
   // a short code for this viewing, hidden in the slides; /admin/ shows which email and time it belongs to
   const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(6));
   const code = [...r].map(x => A[x % A.length]).join("");
-  if (!new URLSearchParams(location.search).has("slides"))
-    var viewRef = await addDoc(collection(db, "views"), { email, lang: LANG, code, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 399) }).catch(() => null);
-  const used = admin ? 0 : await strikes(email);
+  // the log entry is written in the background; slide tracking starts once it exists
+  const viewP = new URLSearchParams(location.search).has("slides") ? Promise.resolve(null)
+    : addDoc(collection(db, "views"), { email, lang: LANG, code, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 399) }).catch(() => null);
+  const used = await usedP;
   if (!admin) {
     localStorage.setItem("ateno-mode", "viewer");
     const q = new URLSearchParams(location.search);
@@ -95,7 +99,7 @@ async function openDeck(user) {
   }
   document.open(); document.write(snap.data().html); document.close();
   guard(email, code, admin, used);
-  if (viewRef) track(viewRef);
+  viewP.then(ref => ref && track(ref));
 }
 
 // ---------- what they saw: seconds on each slide, saved to this view's log entry ----------

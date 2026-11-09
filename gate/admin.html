@@ -56,12 +56,9 @@ tr.detail td{padding:6px 8px 18px}
 <main id="panel" class="wide" hidden>
   <div class="top"><img src="/static/logo.png" alt=""><h1>Deck access</h1>
     <a href="/en/" target="_blank">Open EN</a><a href="/ru/" target="_blank">Open RU</a><a href="#" class="out">Sign out</a></div>
-  <p>Only the people listed here can open the deck at <b id="host"></b>. You always can.</p>
+  <p>Only the people listed here can open the deck at <b id="host"></b>; anyone else can't even get a sign-in email. You always can.
+  Add someone, then send them their invite link. Sign-in links only open in the browser that asked for them, so forwarding doesn't work.</p>
   <p class="msg" id="pmsg" role="status"></p>
-
-  <h2>Requests <span class="count" id="nreq"></span></h2>
-  <p>People who signed in but are not on the list yet.</p>
-  <table><tbody id="reqs"></tbody></table>
 
   <h2>Screenshot attempts <span class="count" id="nstrikes"></span></h2>
   <p>At 3 attempts the deck stops opening for that person. Reset to give access back.</p>
@@ -91,7 +88,7 @@ tr.detail td{padding:6px 8px 18px}
 </main>
 
 <script type="module">
-import { auth, db, $, sendLink, currentUser, logout, ADMIN, HOST } from "/static/app.js";
+import { auth, db, $, sendLink, currentUser, logout, sha256, ADMIN, HOST } from "/static/app.js";
 import { collection, doc, getDoc, setDoc, deleteDoc, writeBatch, onSnapshot, query, orderBy, limit, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/{{SDK}}/firebase-firestore.js";
 
@@ -130,14 +127,21 @@ async function block(entry, note = "") {
   if (!/^(@|[^@\s]+@)[^@\s]+\.[^@\s]+$/.test(entry)) return alert("Enter an email or a domain like @company.com");
   const b = writeBatch(db);
   b.set(doc(db, "deny", entry), { entry, note, addedAt: serverTimestamp() });
-  if (!entry.startsWith("@")) { b.delete(doc(db, "allow", entry)); b.delete(doc(db, "requests", entry)); }
+  if (!entry.startsWith("@")) { b.delete(doc(db, "allow", entry)); b.delete(doc(db, "invited", await sha256(entry))); }
   await b.commit();
 }
 
 async function allow(email, note = "") {
   email = email.trim().toLowerCase();
-  await setDoc(doc(db, "allow", email), { email, note, addedAt: serverTimestamp() });
-  await deleteDoc(doc(db, "requests", email)).catch(() => {});
+  const b = writeBatch(db);
+  b.set(doc(db, "allow", email), { email, note, addedAt: serverTimestamp() });
+  b.set(doc(db, "invited", await sha256(email)), {});
+  await b.commit();
+}
+async function removeAccess(email) {
+  const b = writeBatch(db);
+  b.delete(doc(db, "allow", email)); b.delete(doc(db, "invited", await sha256(email)));
+  await b.commit();
 }
 
 function panel() {
@@ -157,21 +161,9 @@ function panel() {
     $("allow").replaceChildren(...snap.docs.map(d => {
       const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
       const copy = btn("Copy invite link", "", () => copyInvite(d.id, copy));
-      act.append(copy, btn("Remove", "danger", () => confirm(`Remove ${d.id}? They won't be able to open the deck.`) && deleteDoc(d.ref)),
+      act.append(copy, btn("Remove", "danger", () => confirm(`Remove ${d.id}? They won't be able to open the deck.`) && removeAccess(d.id)),
                  btn("Block", "danger", () => confirm(`Block ${d.id}? They go on the black list.`) && block(d.id)));
       tr.append(cell(d.id), cell(v.note || "", "muted"), cell(when(v.addedAt), "muted"), act);
-      return tr;
-    }));
-  });
-
-  onSnapshot(query(collection(db, "requests"), orderBy("at", "desc")), snap => {
-    $("nreq").textContent = snap.size ? `(${snap.size})` : "";
-    if (!snap.size) return empty($("reqs"), "No requests.", 3);
-    $("reqs").replaceChildren(...snap.docs.map(d => {
-      const v = d.data(), tr = document.createElement("tr"), act = cell("", "act");
-      act.append(btn("Allow", "ok", () => allow(d.id)), btn("Dismiss", "", () => deleteDoc(d.ref)),
-                 btn("Block", "danger", () => confirm(`Block ${d.id}?`) && block(d.id)));
-      tr.append(cell(d.id), cell(when(v.at), "muted"), act);
       return tr;
     }));
   });
