@@ -861,7 +861,7 @@ body.presenter #pnotes{display:block;position:fixed;right:0;bottom:0;width:40%;t
   $('gridin').innerHTML = chapters.map(c => {
     let h = `<h2>${c.name}</h2><div class="tiles">`;
     for (let i = c.from; i <= c.to; i++)
-      h += `<a href="#${i + 1}" data-i="${i}"><img loading="lazy" src="${thumb(i)}" alt=""><span><b>${i + 1}</b><em style="font-style:normal">${titleOf(i)}</em></span></a>`;
+      h += `<a href="#${i + 1}" data-i="${i}"><img loading="lazy" data-src="${thumb(i)}" alt=""><span><b>${i + 1}</b><em style="font-style:normal">${titleOf(i)}</em></span></a>`;
     return h + '</div>';
   }).join('');
   const tiles = [...document.querySelectorAll('#grid a')];
@@ -872,9 +872,14 @@ body.presenter #pnotes{display:block;position:fixed;right:0;bottom:0;width:40%;t
     tiles[sel].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   };
   const closeOverlays = () => body.classList.remove('show-grid', 'show-help', 'show-notes');
+  // grid thumbnails download only when the grid is first opened (the grid is always in the page, so the
+  // browser would otherwise fetch all of them at once, competing with the slide on screen)
+  const loadGridThumbs = () => document.querySelectorAll('#grid img[data-src]').forEach(im => { im.src = im.dataset.src; im.removeAttribute('data-src'); });
+  window.loadGridThumbs = loadGridThumbs;
   const toggleGrid = () => {
     body.classList.remove('show-help');
     if (body.classList.toggle('show-grid')) {
+      loadGridThumbs();
       setSel(cur);
       tiles[cur].scrollIntoView({ block: 'center' });
     }

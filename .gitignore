@@ -8,3 +8,4 @@ site/
 .firebase/
 firebase-debug.log
 .admin-link
+media-originals/

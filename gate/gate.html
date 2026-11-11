@@ -135,7 +135,40 @@ async function openDeck(known = {}) {
   }
   document.open(); document.write(snap.data().html); document.close();
   guard(email, code, isAdmin, used);
+  lazyMedia();
   viewP.then(ref => ref && track(ref));
+}
+
+// ---------- images and videos: the slide on screen and the next two first, the rest when idle ----------
+function lazyMedia() {
+  const d = document, slides = [...d.querySelectorAll(".slide")];
+  // a video only starts downloading when its slide is on screen (or in the background pass below)
+  const load = (s, video) => s && s.querySelectorAll("[data-src],[data-poster]").forEach(el => {
+    if (el.dataset.poster) { el.setAttribute("poster", el.dataset.poster); delete el.dataset.poster; }
+    if (el.dataset.src && (video || el.tagName !== "VIDEO")) { el.setAttribute("src", el.dataset.src); delete el.dataset.src; }
+  });
+  const active = () => Math.max(0, slides.findIndex(s => s.classList.contains("active")));
+  const near = () => { const i = active(); load(slides[i], true); [i + 1, i + 2, i - 1].forEach(k => load(slides[k], false)); };
+  // first open: the slide on screen gets the line to itself for a moment, then its neighbours
+  const first = slides[active()];
+  load(first, true);
+  const deck = d.getElementById("deck");
+  const watch = () => { near(); if (deck) new MutationObserver(near).observe(deck, { subtree: true, attributes: true, attributeFilter: ["class"] }); };
+  // if they move before the pause is over, follow them right away
+  const early = () => { if (slides[active()] !== first) { clearTimeout(timer); watch(); removeEventListener("hashchange", early); } };
+  const timer = setTimeout(() => { removeEventListener("hashchange", early); watch(); }, 1500);
+  addEventListener("hashchange", early);
+  // background pass once the slide on screen can play without stalling (or after 8 s): images first, then videos
+  let started = false;
+  const rest = () => {
+    if (started) return; started = true;
+    slides.forEach((s, k) => setTimeout(() => load(s, false), 150 * k));
+    setTimeout(() => slides.forEach(s => load(s, true)), 150 * slides.length + 1500);
+    setTimeout(() => window.loadGridThumbs?.(), 150 * slides.length + 6000);   // overview thumbnails last
+  };
+  const v = slides[active()]?.querySelector("video");
+  if (v && v.readyState < 4) { v.addEventListener("canplaythrough", rest, { once: true }); setTimeout(rest, 8000); }
+  else setTimeout(rest, 1200);
 }
 
 // ---------- what they saw: seconds on each slide, saved to this view's log entry ----------

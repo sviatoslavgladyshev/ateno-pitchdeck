@@ -89,6 +89,19 @@ def protect(html, prefix):
     return html, n
 
 
+def lazy(html, eager=1):
+    """Slides after the first `eager` ones keep their images/videos as data-src / data-poster;
+    the viewer page (gate.html, lazyMedia) loads the current and next slides first, the rest in the background."""
+    count = [0]
+    def tag(m):
+        t = m.group(0)
+        return t.replace(' src="', ' data-src="').replace(' poster="', ' data-poster="')
+    def section(m):
+        count[0] += 1
+        return m.group(0) if count[0] <= eager else re.sub(r"<(?:img|video)\b[^>]*>", tag, m.group(0))
+    return re.sub(r'<section class="slide[\s\S]*?</section>', section, html)
+
+
 def upload(lang, html, access, coll="decks"):
     url = (f"https://firestore.googleapis.com/v1/projects/{PROJECT}/databases/(default)/documents/{coll}/{lang}")
     body = {"fields": {"html": {"stringValue": html},
@@ -113,6 +126,7 @@ def main():
             shutil.copytree(deck / sub, files / sub)
         shutil.copy(deck / "remote.html", files / "remote.html")
         html, n = protect((deck / "index.html").read_text(encoding="utf-8"), prefix)
+        html = lazy(html)
         assert len(html.encode()) < 1_000_000, "deck HTML is over Firestore's 1 MB document limit"
         upload(lang, html, access, "decksFull")                    # admin: with speaker notes
         viewer = re.sub(r"<aside>[\s\S]*?</aside>", "<aside></aside>", html)
@@ -131,7 +145,12 @@ def main():
         (site / page).mkdir()
         (site / page / "index.html").write_text(fill((ROOT / f"gate/{page}.html").read_text(encoding="utf-8"), COMMON), encoding="utf-8")
     (site / "404.html").write_text("<!DOCTYPE html><meta charset=utf-8><title>Not found</title><meta http-equiv=refresh content=\"0;url=/en/\">")
-    subprocess.run(["firebase", "deploy", "--only", "hosting,firestore", "--project", PROJECT, "--non-interactive"], check=True)
+    for attempt in range(3):     # Firebase deploys fail now and then for no reason; a retry goes through
+        if subprocess.run(["firebase", "deploy", "--only", "hosting,firestore", "--project", PROJECT, "--non-interactive"]).returncode == 0:
+            break
+        print(f"deploy failed, retrying ({attempt + 1}/3)…")
+    else:
+        sys.exit("deploy failed 3 times")
     auth_settings(access)
     print(f"live: https://{HOST}/en/  ·  admin: https://{HOST}/admin/")
 
